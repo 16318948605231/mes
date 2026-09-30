@@ -65,7 +65,7 @@ public sealed class SoapLiveTests
         Assert.Equal("WO-1", result.Value!.Id);
         Assert.Equal("P1", result.Value.ProductCode);
 
-        await serverTask.ConfigureAwait(false);
+        await serverTask;
         listener.Stop();
     }
 }

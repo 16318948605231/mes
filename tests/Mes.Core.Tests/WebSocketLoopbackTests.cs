@@ -13,7 +13,7 @@ namespace Mes.Core.Tests;
 
 /// <summary>
 /// WebSocket Provider 端到端测试：用本地 <see cref="TcpListener"/> + 手工握手 +
-/// <see cref="WebSocket.CreateFromStream"/> 搭建回环服务，验证请求/响应与订阅推送。
+/// <c>WebSocket.CreateFromStream</c> 搭建回环服务，验证请求/响应与订阅推送。
 /// （HttpListener.AcceptWebSocketAsync 在 Linux 上不受支持，故手工实现握手。）
 /// </summary>
 public sealed class WebSocketLoopbackTests
