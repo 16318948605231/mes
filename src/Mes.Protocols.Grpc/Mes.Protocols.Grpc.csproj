@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MesLibraryTargetFrameworks)</TargetFrameworks>
+    <Description>MES 连接库 - gRPC 协议 Provider（一元请求/响应与服务端流式事件订阅，内置通用 MesGateway 契约）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mes.Core\Mes.Core.csproj" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\mes_gateway.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+</Project>

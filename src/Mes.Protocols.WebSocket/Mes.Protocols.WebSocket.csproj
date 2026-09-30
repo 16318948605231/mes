@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MesLibraryTargetFrameworks)</TargetFrameworks>
+    <Description>MES 连接库 - WebSocket 协议 Provider（双向实时通道，含请求/响应与发布/订阅约定）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mes.Core\Mes.Core.csproj" />
+  </ItemGroup>
+
+</Project>

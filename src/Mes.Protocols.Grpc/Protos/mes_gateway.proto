@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package mes;
+
+option csharp_namespace = "Mes.Protocols.Grpc.Generated";
+
+// MES 通用网关服务：以协议无关的字节负载承载业务操作，
+// 请求/响应走一元调用，事件订阅走服务端流式。
+service MesGateway {
+  // 一元调用：查询/命令（请求/响应）。
+  rpc Invoke (InvokeRequest) returns (InvokeReply);
+
+  // 一元调用：上报/发布（无需业务响应）。
+  rpc Publish (PublishRequest) returns (PublishReply);
+
+  // 服务端流式：按通道订阅事件。
+  rpc Subscribe (SubscribeRequest) returns (stream Event);
+}
+
+message InvokeRequest {
+  string channel = 1;
+  string verb = 2;
+  string correlation_id = 3;
+  map<string, string> headers = 4;
+  bytes body = 5;
+  string content_type = 6;
+}
+
+message InvokeReply {
+  bool success = 1;
+  int32 status_code = 2;
+  string error_message = 3;
+  bytes body = 4;
+  string content_type = 5;
+}
+
+message PublishRequest {
+  string channel = 1;
+  string correlation_id = 2;
+  bytes body = 3;
+  string content_type = 4;
+}
+
+message PublishReply {
+  bool success = 1;
+}
+
+message SubscribeRequest {
+  string channel = 1;
+}
+
+message Event {
+  string channel = 1;
+  string correlation_id = 2;
+  bytes body = 3;
+  string content_type = 4;
+}

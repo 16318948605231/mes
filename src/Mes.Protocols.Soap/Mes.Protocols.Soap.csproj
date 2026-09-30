@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MesLibraryTargetFrameworks)</TargetFrameworks>
+    <Description>MES 连接库 - SOAP / WCF Web Service 协议 Provider（HTTP + XML 信封，JSON-over-SOAP 约定）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mes.Core\Mes.Core.csproj" />
+  </ItemGroup>
+
+</Project>

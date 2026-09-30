@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MesLibraryTargetFrameworks)</TargetFrameworks>
+    <Description>MES 连接库 - Apache Kafka 协议 Provider（事件流：发布/订阅与基于回复主题的请求/响应）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mes.Core\Mes.Core.csproj" />
+    <PackageReference Include="Confluent.Kafka" />
+  </ItemGroup>
+
+</Project>
