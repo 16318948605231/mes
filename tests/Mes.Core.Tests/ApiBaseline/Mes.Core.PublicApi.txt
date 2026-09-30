@@ -1,0 +1,680 @@
+TYPE class Mes.Core.Builder.MesClientBuilder
+  ctor ()
+  method IMesClient Build()
+  method MesClientBuilder AddTransportFactory(IMesTransportFactory)
+  method MesClientBuilder Configure(Action`1)
+  method MesClientBuilder Create()
+  method MesClientBuilder MapOperation(MesOperationBinding)
+  method MesClientBuilder MapOperation(String, String, String, Boolean)
+  method MesClientBuilder WithAuth(Action`1)
+  method MesClientBuilder WithImageOptions(Action`1)
+  method MesClientBuilder WithLoggerFactory(ILoggerFactory)
+  method MesClientBuilder WithName(String)
+  method MesClientBuilder WithRetry(Action`1)
+  method MesClientBuilder WithSerializer(IMesSerializer)
+  property MesOptions Options
+TYPE interface Mes.Core.Client.IMesClient
+  event EventHandler`1 AlarmReceived
+  event EventHandler`1 ConnectionStateChanged
+  event EventHandler`1 ErrorOccurred
+  event EventHandler`1 InspectionReported
+  event EventHandler`1 MessageReceived
+  method Task ConnectAsync(CancellationToken)
+  method Task DisconnectAsync(CancellationToken)
+  method Task`1 CheckUnitPassedAsync(String, String, CancellationToken)
+  method Task`1 ClearAlarmAsync(String, CancellationToken)
+  method Task`1 GetRecipeAsync(String, CancellationToken)
+  method Task`1 GetTraceabilityAsync(String, CancellationToken)
+  method Task`1 GetUnitAsync(String, CancellationToken)
+  method Task`1 GetWorkOrderAsync(String, CancellationToken)
+  method Task`1 InvokeAsync(String, Object, IDictionary`2, CancellationToken)
+  method Task`1 InvokeAsync(String, Object, IDictionary`2, CancellationToken)
+  method Task`1 PingAsync(CancellationToken)
+  method Task`1 RaiseAlarmAsync(Alarm, CancellationToken)
+  method Task`1 ReportDeviceStatusAsync(DeviceStatus, CancellationToken)
+  method Task`1 ReportInspectionResultAsync(InspectionResult, CancellationToken)
+  method Task`1 ReportMeasurementsAsync(String, IEnumerable`1, CancellationToken)
+  method Task`1 SubscribeAlarmsAsync(String, Func`3, CancellationToken)
+  method Task`1 SubscribeAsync(String, Func`3, CancellationToken)
+  method Task`1 TestConnectionAsync(CancellationToken)
+  method Task`1 UploadImageAsync(MesImage, CancellationToken)
+  property IMesTransport Transport
+  property MesConnectionState State
+  property String Name
+TYPE interface Mes.Core.Client.IMesClientFactory
+  method IMesClient Create(MesOptions)
+  method IMesClient Create(String)
+TYPE interface Mes.Core.Client.IMesTransportFactory
+  method IMesTransport Create(MesOptions, ILoggerFactory)
+  method MesOperationCatalog CreateDefaultCatalog(MesOptions)
+  property MesProtocolKind Protocol
+TYPE class Mes.Core.Client.MesClient
+  ctor (IMesTransport, MesOperationCatalog, IMesSerializer, MesOptions, ILogger`1)
+  event EventHandler`1 AlarmReceived
+  event EventHandler`1 ConnectionStateChanged
+  event EventHandler`1 ErrorOccurred
+  event EventHandler`1 InspectionReported
+  event EventHandler`1 MessageReceived
+  method Task ConnectAsync(CancellationToken)
+  method Task DisconnectAsync(CancellationToken)
+  method Task`1 CheckUnitPassedAsync(String, String, CancellationToken)
+  method Task`1 ClearAlarmAsync(String, CancellationToken)
+  method Task`1 GetRecipeAsync(String, CancellationToken)
+  method Task`1 GetTraceabilityAsync(String, CancellationToken)
+  method Task`1 GetUnitAsync(String, CancellationToken)
+  method Task`1 GetWorkOrderAsync(String, CancellationToken)
+  method Task`1 InvokeAsync(String, Object, IDictionary`2, CancellationToken)
+  method Task`1 InvokeAsync(String, Object, IDictionary`2, CancellationToken)
+  method Task`1 PingAsync(CancellationToken)
+  method Task`1 RaiseAlarmAsync(Alarm, CancellationToken)
+  method Task`1 ReportDeviceStatusAsync(DeviceStatus, CancellationToken)
+  method Task`1 ReportInspectionResultAsync(InspectionResult, CancellationToken)
+  method Task`1 ReportMeasurementsAsync(String, IEnumerable`1, CancellationToken)
+  method Task`1 SubscribeAlarmsAsync(String, Func`3, CancellationToken)
+  method Task`1 SubscribeAsync(String, Func`3, CancellationToken)
+  method Task`1 TestConnectionAsync(CancellationToken)
+  method Task`1 UploadImageAsync(MesImage, CancellationToken)
+  method ValueTask DisposeAsync()
+  property IMesTransport Transport
+  property MesConnectionState State
+  property String Name
+TYPE class Mes.Core.Client.MesClientFactory
+  ctor (IEnumerable`1, IEnumerable`1, IMesSerializer, ILoggerFactory)
+  method IMesClient Create(MesOptions)
+  method IMesClient Create(String)
+TYPE class Mes.Core.Common.MesConstants
+  field Int32 DefaultTimeoutMs
+  field String CorrelationIdHeader
+  field String DefaultEncoding
+TYPE class Mes.Core.Common.MesResult
+  ctor ()
+  method MesResult Fail(String, String, Exception, String)
+  method MesResult FromException(Exception, String, String)
+  method MesResult Ok(String, String)
+  method String ToString()
+  property Boolean IsFailure
+  property Boolean Success
+  property Exception Exception
+  property IReadOnlyDictionary`2 Metadata
+  property Int64 ElapsedMilliseconds
+  property String Code
+  property String CorrelationId
+  property String Message
+TYPE class Mes.Core.Common.MesResultCodes
+  field String Cancelled
+  field String ConnectionFailed
+  field String Exception
+  field String NotConnected
+  field String NotFound
+  field String NotSupported
+  field String Ok
+  field String OperationNotMapped
+  field String SerializationError
+  field String ServerError
+  field String Timeout
+  field String TransportError
+  field String Unauthorized
+  field String ValidationError
+TYPE class Mes.Core.Common.MesResult`1
+  ctor ()
+  method MesResult`1 Fail(String, String, Exception, String)
+  method MesResult`1 FromException(Exception, String, String)
+  method MesResult`1 Ok(T, String, String)
+  property T Value
+TYPE class Mes.Core.Configuration.MesAuthOptions
+  ctor ()
+  property MesAuthType Type
+  property String ApiKey
+  property String ApiKeyHeader
+  property String CertificatePassword
+  property String CertificatePath
+  property String ClientId
+  property String ClientSecret
+  property String Password
+  property String Scope
+  property String Token
+  property String TokenUrl
+  property String Username
+TYPE class Mes.Core.Configuration.MesConnectionString
+  method MesOptions Parse(String, Action`1)
+  method MesProtocolKind Apply(MesOptions, String)
+  method MesProtocolKind ResolveProtocol(String)
+TYPE class Mes.Core.Configuration.MesEndpointOptions
+  ctor ()
+  property Boolean UseTls
+  property Nullable`1 Port
+  property String BaseAddress
+  property String Host
+TYPE class Mes.Core.Configuration.MesImageOptions
+  ctor ()
+  property Boolean ComputeSha256
+  property ImageTransferMode DefaultTransferMode
+  property Int64 MaxEmbeddedBytes
+  property String UploadOperationKey
+TYPE class Mes.Core.Configuration.MesOptions
+  ctor ()
+  method IReadOnlyList`1 Validate()
+  method MesOptions SetProperty(String, String)
+  method String GetProperty(String, String)
+  property Boolean AutoConnect
+  property IDictionary`2 DefaultHeaders
+  property IDictionary`2 DefaultParameters
+  property IDictionary`2 Properties
+  property IList`1 OperationBindings
+  property Int32 TimeoutMs
+  property MesAuthOptions Auth
+  property MesEndpointOptions Endpoint
+  property MesImageOptions Image
+  property MesProtocolKind Protocol
+  property MesReconnectOptions Reconnect
+  property MesRetryOptions Retry
+  property MesTlsOptions Tls
+  property String Name
+TYPE class Mes.Core.Configuration.MesReconnectOptions
+  ctor ()
+  property Boolean Enabled
+  property Double BackoffFactor
+  property Int32 InitialDelayMs
+  property Int32 MaxAttempts
+  property Int32 MaxDelayMs
+TYPE class Mes.Core.Configuration.MesRetryOptions
+  ctor ()
+  property Boolean Enabled
+  property Boolean RetryOnTimeout
+  property Double BackoffFactor
+  property Int32 BaseDelayMs
+  property Int32 MaxDelayMs
+  property Int32 MaxRetries
+TYPE class Mes.Core.Configuration.MesTlsOptions
+  ctor ()
+  property Boolean AllowUntrustedCertificates
+  property Boolean Enabled
+  property String CaCertificatePath
+  property String ClientCertificatePassword
+  property String ClientCertificatePath
+TYPE class Mes.Core.DependencyInjection.MesServiceCollectionExtensions
+  method IServiceCollection AddMesClient(IServiceCollection, Action`1)
+  method IServiceCollection AddMesCore(IServiceCollection)
+  method IServiceCollection AddMesOptions(IServiceCollection, Action`1)
+TYPE class Mes.Core.Diagnostics.MesDiagnostics
+  field ActivitySource ActivitySource
+  field Counter`1 Operations
+  field Histogram`1 OperationDuration
+  field Meter Meter
+  field String SourceName
+  field String Version
+  method Activity StartOperation(String, String, String)
+  method Void Record(String, String, String, Boolean, Double)
+TYPE enum Mes.Core.Enums.AlarmSeverity
+  field AlarmSeverity Critical
+  field AlarmSeverity Info
+  field AlarmSeverity Major
+  field AlarmSeverity Minor
+  field AlarmSeverity Warning
+  field Int32 value__
+TYPE enum Mes.Core.Enums.AlarmState
+  field AlarmState Acknowledged
+  field AlarmState Cleared
+  field AlarmState Set
+  field Int32 value__
+TYPE enum Mes.Core.Enums.DefectSeverity
+  field DefectSeverity Critical
+  field DefectSeverity Info
+  field DefectSeverity Major
+  field DefectSeverity Minor
+  field Int32 value__
+TYPE enum Mes.Core.Enums.DeviceState
+  field DeviceState Down
+  field DeviceState Engineering
+  field DeviceState Idle
+  field DeviceState Maintenance
+  field DeviceState Offline
+  field DeviceState Paused
+  field DeviceState Running
+  field DeviceState Setup
+  field DeviceState Unknown
+  field Int32 value__
+TYPE enum Mes.Core.Enums.ImageFormat
+  field ImageFormat Bmp
+  field ImageFormat Jpeg
+  field ImageFormat Png
+  field ImageFormat Raw
+  field ImageFormat Tiff
+  field ImageFormat Unknown
+  field ImageFormat Webp
+  field Int32 value__
+TYPE enum Mes.Core.Enums.ImageTransferMode
+  field ImageTransferMode Embedded
+  field ImageTransferMode ReferenceOnly
+  field ImageTransferMode SeparateUpload
+  field Int32 value__
+TYPE enum Mes.Core.Enums.InspectionOutcome
+  field InspectionOutcome Fail
+  field InspectionOutcome Indeterminate
+  field InspectionOutcome None
+  field InspectionOutcome Pass
+  field InspectionOutcome Rework
+  field InspectionOutcome Scrap
+  field InspectionOutcome Warning
+  field Int32 value__
+TYPE enum Mes.Core.Enums.MeasurementStatus
+  field Int32 value__
+  field MeasurementStatus Ng
+  field MeasurementStatus NotEvaluated
+  field MeasurementStatus Ok
+  field MeasurementStatus OutOfControl
+TYPE enum Mes.Core.Enums.MesAuthType
+  field Int32 value__
+  field MesAuthType ApiKey
+  field MesAuthType Basic
+  field MesAuthType BearerToken
+  field MesAuthType Certificate
+  field MesAuthType Custom
+  field MesAuthType None
+  field MesAuthType OAuth2ClientCredentials
+  field MesAuthType UsernamePassword
+TYPE enum Mes.Core.Enums.MesConnectionState
+  field Int32 value__
+  field MesConnectionState Closed
+  field MesConnectionState Connected
+  field MesConnectionState Connecting
+  field MesConnectionState Disconnected
+  field MesConnectionState Faulted
+  field MesConnectionState Reconnecting
+TYPE enum Mes.Core.Enums.MesPayloadFormat
+  field Int32 value__
+  field MesPayloadFormat Binary
+  field MesPayloadFormat FormUrlEncoded
+  field MesPayloadFormat Json
+  field MesPayloadFormat Text
+  field MesPayloadFormat Xml
+TYPE enum Mes.Core.Enums.MesProtocolKind
+  field Int32 value__
+  field MesProtocolKind Amqp
+  field MesProtocolKind Custom
+  field MesProtocolKind Database
+  field MesProtocolKind FileDrop
+  field MesProtocolKind Grpc
+  field MesProtocolKind InMemory
+  field MesProtocolKind Kafka
+  field MesProtocolKind Mqtt
+  field MesProtocolKind OpcUa
+  field MesProtocolKind Rest
+  field MesProtocolKind SecsGem
+  field MesProtocolKind Soap
+  field MesProtocolKind WebSocket
+TYPE enum Mes.Core.Enums.MesTransportCapabilities
+  field Int32 value__
+  field MesTransportCapabilities All
+  field MesTransportCapabilities None
+  field MesTransportCapabilities Publish
+  field MesTransportCapabilities Request
+  field MesTransportCapabilities Subscribe
+TYPE enum Mes.Core.Enums.WorkOrderStatus
+  field Int32 value__
+  field WorkOrderStatus Cancelled
+  field WorkOrderStatus Closed
+  field WorkOrderStatus Completed
+  field WorkOrderStatus Created
+  field WorkOrderStatus InProgress
+  field WorkOrderStatus OnHold
+  field WorkOrderStatus Released
+  field WorkOrderStatus Unknown
+TYPE class Mes.Core.Events.MesAlarmEventArgs
+  ctor (Alarm)
+  property Alarm Alarm
+TYPE class Mes.Core.Events.MesConnectionStateChangedEventArgs
+  ctor (MesConnectionState, MesConnectionState, String)
+  property DateTimeOffset Timestamp
+  property MesConnectionState Current
+  property MesConnectionState Previous
+  property String Reason
+TYPE class Mes.Core.Events.MesErrorEventArgs
+  ctor (Exception, String)
+  property DateTimeOffset Timestamp
+  property Exception Exception
+  property String Context
+TYPE class Mes.Core.Events.MesInspectionReportedEventArgs
+  ctor (InspectionResult, Boolean)
+  property Boolean Success
+  property InspectionResult Result
+TYPE class Mes.Core.Events.MesMessageReceivedEventArgs
+  ctor (String, TransportMessage)
+  property String Channel
+  property TransportMessage Message
+TYPE class Mes.Core.Events.TransportMessageEventArgs
+  ctor (TransportMessage)
+  property TransportMessage Message
+TYPE class Mes.Core.Exceptions.MesConfigurationException
+  ctor (String, Exception)
+TYPE class Mes.Core.Exceptions.MesConnectionException
+  ctor (String, Exception)
+TYPE class Mes.Core.Exceptions.MesException
+  ctor (String, String, Exception)
+  property String Code
+  property String CorrelationId
+TYPE class Mes.Core.Exceptions.MesOperationException
+  ctor (String, String, Exception)
+  property String OperationKey
+TYPE class Mes.Core.Exceptions.MesSerializationException
+  ctor (String, Exception)
+TYPE class Mes.Core.Exceptions.MesTimeoutException
+  ctor (String, Exception)
+TYPE class Mes.Core.Exceptions.MesTransportException
+  ctor (String, Exception)
+  property Nullable`1 StatusCode
+TYPE class Mes.Core.Models.Alarm
+  ctor ()
+  property AlarmSeverity Severity
+  property AlarmState State
+  property DateTimeOffset RaisedAt
+  property IDictionary`2 Attributes
+  property Nullable`1 ClearedAt
+  property String Category
+  property String Code
+  property String DeviceId
+  property String Id
+  property String Text
+TYPE class Mes.Core.Models.BoundingBox
+  ctor ()
+  property Double Height
+  property Double Width
+  property Double X
+  property Double Y
+  property IList`1 Polygon
+  property String Unit
+TYPE class Mes.Core.Models.Defect
+  ctor ()
+  property BoundingBox Region
+  property DefectSeverity Severity
+  property IDictionary`2 Attributes
+  property Int32 Count
+  property Nullable`1 Confidence
+  property String Category
+  property String Code
+  property String ImageRef
+  property String Name
+TYPE class Mes.Core.Models.DeviceStatus
+  ctor ()
+  property DateTimeOffset Timestamp
+  property DeviceState State
+  property IDictionary`2 Attributes
+  property IDictionary`2 Metrics
+  property Nullable`1 Utilization
+  property String CurrentRecipe
+  property String DeviceId
+  property String StateReason
+TYPE class Mes.Core.Models.GateCheckResult
+  ctor ()
+  property Boolean Passed
+  property IDictionary`2 Attributes
+  property String Reason
+TYPE class Mes.Core.Models.ImageUploadDto
+  ctor ()
+  property ImageFormat Format
+  property Nullable`1 Height
+  property Nullable`1 Width
+  property String ContentType
+  property String DataBase64
+  property String FileName
+  property String Id
+  property String Sha256
+TYPE class Mes.Core.Models.ImageUploadReceipt
+  ctor ()
+  property DateTimeOffset UploadedAt
+  property IDictionary`2 Attributes
+  property Int64 Size
+  property String ImageId
+  property String RemoteUri
+  property String StorageKey
+TYPE class Mes.Core.Models.InspectionResult
+  ctor ()
+  property Boolean IsPass
+  property DateTimeOffset InspectedAt
+  property IDictionary`2 Attributes
+  property IList`1 Defects
+  property IList`1 Images
+  property IList`1 Measurements
+  property InspectionOutcome Outcome
+  property Nullable`1 DurationMs
+  property String Id
+  property String OperationId
+  property String OperatorId
+  property String ProductCode
+  property String ProgramId
+  property String SerialNumber
+  property String StationId
+  property String WorkOrderId
+TYPE class Mes.Core.Models.MaterialConsumption
+  ctor ()
+  property Decimal Quantity
+  property IDictionary`2 Attributes
+  property String Lot
+  property String MaterialCode
+  property String SerialNumber
+  property String Supplier
+  property String Unit
+TYPE class Mes.Core.Models.Measurement
+  ctor ()
+  method MeasurementStatus Evaluate()
+  property DateTimeOffset Timestamp
+  property IDictionary`2 Attributes
+  property MeasurementStatus Status
+  property Nullable`1 LowerLimit
+  property Nullable`1 Nominal
+  property Nullable`1 UpperLimit
+  property Nullable`1 Value
+  property String Name
+  property String StringValue
+  property String Unit
+TYPE class Mes.Core.Models.MesImage
+  ctor ()
+  method MesImage FromFile(String, ImageTransferMode)
+  method ValueTuple`2 InferFormat(String)
+  property Byte[] Data
+  property IDictionary`2 Attributes
+  property ImageFormat Format
+  property ImageTransferMode TransferMode
+  property Nullable`1 Height
+  property Nullable`1 Length
+  property Nullable`1 Width
+  property String ContentType
+  property String FileName
+  property String Id
+  property String LocalPath
+  property String RemoteUri
+  property String Sha256
+  property String StorageKey
+TYPE struct Mes.Core.Models.PointF2D
+  ctor (Double, Double)
+  method Boolean Equals(Object)
+  method Boolean Equals(PointF2D)
+  method Int32 GetHashCode()
+  method String ToString()
+  method Void Deconstruct(Double&, Double&)
+  property Double X
+  property Double Y
+TYPE class Mes.Core.Models.ProcessStep
+  ctor ()
+  property DateTimeOffset Timestamp
+  property IDictionary`2 Attributes
+  property String OperationId
+  property String OperatorId
+  property String Result
+  property String StationId
+TYPE class Mes.Core.Models.ProductUnit
+  ctor ()
+  property IDictionary`2 Attributes
+  property Nullable`1 BirthTime
+  property String CurrentOperation
+  property String ProductCode
+  property String SerialNumber
+  property String Status
+  property String WorkOrderId
+TYPE class Mes.Core.Models.Recipe
+  ctor ()
+  property IDictionary`2 Attributes
+  property IDictionary`2 Parameters
+  property String Checksum
+  property String Id
+  property String Name
+  property String ProductCode
+  property String Version
+TYPE class Mes.Core.Models.TraceabilityRecord
+  ctor ()
+  property IDictionary`2 Attributes
+  property IList`1 Components
+  property IList`1 Materials
+  property IList`1 ProcessHistory
+  property String ParentSerialNumber
+  property String ProductCode
+  property String SerialNumber
+  property String WorkOrderId
+TYPE class Mes.Core.Models.WorkOrder
+  ctor ()
+  property Decimal CompletedQuantity
+  property Decimal Quantity
+  property IDictionary`2 Attributes
+  property Nullable`1 PlannedEnd
+  property Nullable`1 PlannedStart
+  property String CurrentOperation
+  property String Id
+  property String Number
+  property String ProductCode
+  property String ProductName
+  property String RouteId
+  property WorkOrderStatus Status
+TYPE class Mes.Core.Operations.MesOperationBinding
+  ctor ()
+  property Boolean RequestResponse
+  property Boolean Retain
+  property IDictionary`2 DefaultHeaders
+  property IDictionary`2 DefaultParameters
+  property Int32 Qos
+  property MesPayloadFormat Format
+  property String ChannelTemplate
+  property String OperationKey
+  property String Verb
+TYPE class Mes.Core.Operations.MesOperationCatalog
+  ctor ()
+  method Boolean Contains(String)
+  method Boolean Remove(String)
+  method Boolean TryGet(String, MesOperationBinding&)
+  method MesOperationCatalog Clone()
+  method MesOperationCatalog CreateAmqpDefaults(String)
+  method MesOperationCatalog CreateGrpcDefaults()
+  method MesOperationCatalog CreateKafkaDefaults(String)
+  method MesOperationCatalog CreateMqttDefaults(String)
+  method MesOperationCatalog CreateRestDefaults()
+  method MesOperationCatalog CreateSoapDefaults()
+  method MesOperationCatalog CreateWebSocketDefaults(String)
+  method MesOperationCatalog Map(MesOperationBinding)
+  method MesOperationCatalog Map(String, String, String, Boolean, MesPayloadFormat, Int32, Boolean)
+  method TransportMessage BuildMessage(String, Byte[], IReadOnlyDictionary`2)
+  method TransportRequest BuildRequest(String, Object, IReadOnlyDictionary`2)
+  property IReadOnlyCollection`1 Keys
+  property Int32 Count
+TYPE class Mes.Core.Operations.MesOperationKeys
+  field String CheckUnitPassed
+  field String ClearAlarm
+  field String GetRecipe
+  field String GetTraceability
+  field String GetUnit
+  field String GetWorkOrder
+  field String RaiseAlarm
+  field String ReportDeviceStatus
+  field String ReportInspection
+  field String ReportMeasurements
+  field String UploadImage
+TYPE class Mes.Core.Operations.TemplateEngine
+  method IReadOnlyList`1 ExtractTokens(String)
+  method String Render(String, IReadOnlyDictionary`2, Boolean)
+TYPE class Mes.Core.Resilience.RetryExecutor
+  ctor (MesRetryOptions, ILogger)
+  method Task`1 ExecuteAsync(Func`2, Func`2, CancellationToken)
+  method TimeSpan ComputeDelay(Int32)
+TYPE interface Mes.Core.Serialization.IMesSerializer
+  method Byte[] Serialize(Object)
+  method Object Deserialize(Byte[], Type)
+  method String SerializeToString(Object)
+  method T Deserialize(Byte[])
+  method T DeserializeFromString(String)
+  property MesPayloadFormat Format
+  property String ContentType
+TYPE class Mes.Core.Serialization.JsonMesSerializer
+  ctor ()
+  ctor (JsonSerializerOptions)
+  method Byte[] Serialize(Object)
+  method JsonSerializerOptions CreateDefaultOptions()
+  method Object Deserialize(Byte[], Type)
+  method String SerializeToString(Object)
+  method T Deserialize(Byte[])
+  method T DeserializeFromString(String)
+  property JsonSerializerOptions DefaultOptions
+  property MesPayloadFormat Format
+  property String ContentType
+TYPE interface Mes.Core.Transport.IMesTransport
+  event EventHandler`1 Error
+  event EventHandler`1 MessageReceived
+  event EventHandler`1 StateChanged
+  method Task ConnectAsync(CancellationToken)
+  method Task DisconnectAsync(CancellationToken)
+  method Task PublishAsync(TransportMessage, CancellationToken)
+  method Task`1 RequestAsync(TransportRequest, CancellationToken)
+  method Task`1 SubscribeAsync(String, Func`3, CancellationToken)
+  property MesConnectionState State
+  property MesProtocolKind Protocol
+  property MesTransportCapabilities Capabilities
+  property String Name
+TYPE class Mes.Core.Transport.MesTransportBase
+  event EventHandler`1 Error
+  event EventHandler`1 MessageReceived
+  event EventHandler`1 StateChanged
+  method Task ConnectAsync(CancellationToken)
+  method Task DisconnectAsync(CancellationToken)
+  method Task PublishAsync(TransportMessage, CancellationToken)
+  method Task`1 RequestAsync(TransportRequest, CancellationToken)
+  method Task`1 SubscribeAsync(String, Func`3, CancellationToken)
+  method ValueTask DisposeAsync()
+  property MesConnectionState State
+  property MesProtocolKind Protocol
+  property MesTransportCapabilities Capabilities
+  property String Name
+TYPE class Mes.Core.Transport.TransportMessage
+  ctor ()
+  method String BodyAsString()
+  method TransportMessage FromString(String, String, String)
+  property Boolean Retain
+  property Byte[] Body
+  property DateTimeOffset Timestamp
+  property IDictionary`2 Headers
+  property Int32 Qos
+  property String Channel
+  property String ContentType
+  property String CorrelationId
+TYPE class Mes.Core.Transport.TransportRequest
+  ctor ()
+  property Byte[] Body
+  property IDictionary`2 Headers
+  property IDictionary`2 Parameters
+  property MesPayloadFormat Format
+  property Nullable`1 TimeoutMs
+  property Object PayloadObject
+  property String Channel
+  property String ContentType
+  property String CorrelationId
+  property String Verb
+  property Type ExpectedResponseType
+TYPE class Mes.Core.Transport.TransportResponse
+  ctor ()
+  method String BodyAsString()
+  method TransportResponse Fail(String, Int32)
+  method TransportResponse Ok(Byte[], Int32, String)
+  property Boolean Success
+  property Byte[] Body
+  property IDictionary`2 Headers
+  property Int32 StatusCode
+  property Int64 ElapsedMilliseconds
+  property String ContentType
+  property String CorrelationId
+  property String ErrorMessage
