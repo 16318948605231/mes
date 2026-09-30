@@ -147,10 +147,10 @@ public sealed class KafkaTransport : MesTransportBase
         if (_replyLoop is not null)
             return;
         _replyCts = new CancellationTokenSource();
-        _replyLoop = Task.Run(() => ReplyLoopAsync(_replyCts.Token), CancellationToken.None);
+        _replyLoop = Task.Run(() => RunReplyLoop(_replyCts.Token), CancellationToken.None);
     }
 
-    private void ReplyLoopAsync(CancellationToken cancellationToken)
+    private void RunReplyLoop(CancellationToken cancellationToken)
     {
         var config = new ConsumerConfig
         {

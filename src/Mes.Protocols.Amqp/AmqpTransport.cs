@@ -23,6 +23,7 @@ public sealed class AmqpTransport : MesTransportBase
     private IChannel? _channel;
     private string? _replyQueue;
     private bool _replyReady;
+    private readonly SemaphoreSlim _replyGate = new(1, 1);
 
     /// <summary>构造。</summary>
     public AmqpTransport(MesOptions options, ILogger? logger = null)
@@ -181,21 +182,31 @@ public sealed class AmqpTransport : MesTransportBase
     {
         if (_replyReady)
             return;
-        var channel = _channel ?? throw new MesTransportException("AMQP 通道未初始化。");
-        var queue = await channel.QueueDeclareAsync(queue: string.Empty, durable: false, exclusive: true,
-            autoDelete: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _replyQueue = queue.QueueName;
-
-        var consumer = new AsyncEventingBasicConsumer(channel);
-        consumer.ReceivedAsync += (_, ea) =>
+        await _replyGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            var correlationId = ea.BasicProperties.CorrelationId;
-            if (correlationId is not null && _pending.TryGetValue(correlationId, out var tcs))
-                tcs.TrySetResult(ea.Body.ToArray());
-            return Task.CompletedTask;
-        };
-        await channel.BasicConsumeAsync(_replyQueue, autoAck: true, consumer, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _replyReady = true;
+            if (_replyReady)
+                return;
+            var channel = _channel ?? throw new MesTransportException("AMQP 通道未初始化。");
+            var queue = await channel.QueueDeclareAsync(queue: string.Empty, durable: false, exclusive: true,
+                autoDelete: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+            _replyQueue = queue.QueueName;
+
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.ReceivedAsync += (_, ea) =>
+            {
+                var correlationId = ea.BasicProperties.CorrelationId;
+                if (correlationId is not null && _pending.TryGetValue(correlationId, out var tcs))
+                    tcs.TrySetResult(ea.Body.ToArray());
+                return Task.CompletedTask;
+            };
+            await channel.BasicConsumeAsync(_replyQueue, autoAck: true, consumer, cancellationToken: cancellationToken).ConfigureAwait(false);
+            _replyReady = true;
+        }
+        finally
+        {
+            _replyGate.Release();
+        }
     }
 
     private void FailPending(Exception ex)

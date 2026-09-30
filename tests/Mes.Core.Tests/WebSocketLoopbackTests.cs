@@ -118,7 +118,8 @@ public sealed class WebSocketLoopbackTests
     {
         var sb = new StringBuilder();
         var buf = new byte[1];
-        while (!sb.ToString().EndsWith("\r\n\r\n", StringComparison.Ordinal))
+        while (!(sb.Length >= 4 && sb[sb.Length - 4] == '\r' && sb[sb.Length - 3] == '\n'
+                 && sb[sb.Length - 2] == '\r' && sb[sb.Length - 1] == '\n'))
         {
             var n = await stream.ReadAsync(buf, ct).ConfigureAwait(false);
             if (n == 0) break;

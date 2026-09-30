@@ -79,7 +79,7 @@ Console.WriteLine("完成。切换到真实协议只需替换连接字符串，�
 Console.WriteLine("  mqtt://broker:1883?prefix=mes");
 Console.WriteLine("  rest://mes.example.com/api?token=xxxxx");
 Console.WriteLine("  kafka://broker:9092?prefix=mes");
-Console.WriteLine("  ******rabbit:5672/vhost");
+Console.WriteLine("  amqp://rabbit:5672/vhost");
 Console.WriteLine("  grpc://mes.example.com:5001");
 
 static async Task<string?> WaitOrTimeout(Task<string> task, TimeSpan timeout)

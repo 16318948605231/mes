@@ -5,7 +5,7 @@ using Mes.Core.Exceptions;
 namespace Mes.Core.Configuration;
 
 /// <summary>
-/// 连接字符串 / URI 解析器：把一行 <c>******host:port/path?opt=val</c>
+/// 连接字符串 / URI 解析器：把一行 <c>scheme://host:port/path?opt=val</c>
 /// 解析为 <see cref="MesProtocolKind"/> 并填充 <see cref="MesOptions"/>（端点、认证、协议专有属性）。
 /// <para>
 /// 目的是让接入方“换协议只改一个字符串”，甚至把字符串放进配置文件。所支持的 scheme：
