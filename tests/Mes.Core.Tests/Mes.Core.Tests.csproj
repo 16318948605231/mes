@@ -25,6 +25,12 @@
     <ProjectReference Include="..\..\src\Mes.Protocols.FileDrop\Mes.Protocols.FileDrop.csproj" />
     <ProjectReference Include="..\..\src\Mes.Protocols.Database\Mes.Protocols.Database.csproj" />
     <ProjectReference Include="..\..\src\Mes.Protocols.Mqtt\Mes.Protocols.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Soap\Mes.Protocols.Soap.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.WebSocket\Mes.Protocols.WebSocket.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Kafka\Mes.Protocols.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Amqp\Mes.Protocols.Amqp.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Grpc\Mes.Protocols.Grpc.csproj" />
+    <ProjectReference Include="..\..\src\Mes\Mes.csproj" />
   </ItemGroup>
 
 </Project>
