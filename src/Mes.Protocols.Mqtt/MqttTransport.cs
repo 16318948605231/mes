@@ -57,8 +57,7 @@ public sealed class MqttTransport : MesTransportBase
         var prefix = _options.GetProperty("TopicPrefix") ?? "mes";
         _responseTopicRoot = $"{prefix}/rpc/response/{clientId}";
         // 断线重连后需重新订阅响应主题。
-        lock (_sync)
-            _responseSubscribed = false;
+        Volatile.Write(ref _responseSubscribed, false);
 
         var builder = new MqttClientOptionsBuilder()
             .WithTcpServer(host, port)
@@ -180,8 +179,7 @@ public sealed class MqttTransport : MesTransportBase
                 .WithTopicFilter(f => f.WithTopic($"{_responseTopicRoot}/#").WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce))
                 .Build();
             await _client.SubscribeAsync(options, cancellationToken).ConfigureAwait(false);
-            lock (_sync)
-                _responseSubscribed = true;
+            Volatile.Write(ref _responseSubscribed, true);
         }
         finally
         {
@@ -252,8 +250,7 @@ public sealed class MqttTransport : MesTransportBase
 
     private Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
     {
-        lock (_sync)
-            _responseSubscribed = false;
+        Volatile.Write(ref _responseSubscribed, false);
 
         // 连接断开时立即失败所有等待中的请求，避免调用方一直等到超时。
         foreach (var pending in _pendingRequests.Values)

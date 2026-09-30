@@ -216,6 +216,8 @@ public sealed class MqttProviderTests : IAsyncLifetime
             return new ProductUnit { SerialNumber = lastSegment, Status = "Pass" };
         if (topic.Contains("/query/recipe/"))
             return new Recipe { Id = lastSegment, Name = "R-" + lastSegment };
+        if (topic.Contains("/query/traceability/"))
+            return new TraceabilityRecord { SerialNumber = lastSegment };
         if (topic.Contains("/query/gate/"))
             return new GateCheckResult { Passed = true };
         return null;
