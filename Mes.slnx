@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mes.Core/Mes.Core.csproj" />
+  </Folder>
+</Solution>
