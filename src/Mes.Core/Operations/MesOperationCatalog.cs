@@ -139,17 +139,25 @@ public sealed class MesOperationCatalog
     }
 
     /// <summary>
-    /// 创建一套 MQTT 默认主题映射（上报类为发布语义，查询类为请求/响应）。
+    /// 创建一套 MQTT 默认主题映射：上报类为发布语义（QoS 1）；查询类基于 MQTT 5
+    /// “响应主题 + 关联数据”走请求/响应（发布到查询主题、在专属响应主题上等待回复）。
     /// </summary>
     public static MesOperationCatalog CreateMqttDefaults(string prefix = "mes")
     {
         var c = new MesOperationCatalog();
+        // 上报类：单向发布。
         c.Map(MesOperationKeys.ReportInspection, $"{prefix}/inspection/{{serialNumber}}", requestResponse: false, qos: 1);
         c.Map(MesOperationKeys.ReportMeasurements, $"{prefix}/measurement/{{serialNumber}}", requestResponse: false, qos: 1);
         c.Map(MesOperationKeys.ReportDeviceStatus, $"{prefix}/device/{{deviceId}}/status", requestResponse: false, qos: 1);
         c.Map(MesOperationKeys.RaiseAlarm, $"{prefix}/alarm", requestResponse: false, qos: 1);
         c.Map(MesOperationKeys.ClearAlarm, $"{prefix}/alarm/clear", requestResponse: false, qos: 1);
         c.Map(MesOperationKeys.UploadImage, $"{prefix}/image/{{serialNumber}}", requestResponse: false, qos: 1);
+        // 查询类：请求/响应（RPC）。
+        c.Map(MesOperationKeys.GetWorkOrder, $"{prefix}/query/workorder/{{workOrderId}}", requestResponse: true, qos: 1);
+        c.Map(MesOperationKeys.GetUnit, $"{prefix}/query/unit/{{serialNumber}}", requestResponse: true, qos: 1);
+        c.Map(MesOperationKeys.GetRecipe, $"{prefix}/query/recipe/{{recipeId}}", requestResponse: true, qos: 1);
+        c.Map(MesOperationKeys.GetTraceability, $"{prefix}/query/traceability/{{serialNumber}}", requestResponse: true, qos: 1);
+        c.Map(MesOperationKeys.CheckUnitPassed, $"{prefix}/query/gate/{{serialNumber}}/{{operationId}}", requestResponse: true, qos: 1);
         return c;
     }
 }

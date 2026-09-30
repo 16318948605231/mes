@@ -11,6 +11,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="MQTTnet.Server" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector" />
@@ -22,6 +24,7 @@
     <ProjectReference Include="..\..\src\Mes.Protocols.Rest\Mes.Protocols.Rest.csproj" />
     <ProjectReference Include="..\..\src\Mes.Protocols.FileDrop\Mes.Protocols.FileDrop.csproj" />
     <ProjectReference Include="..\..\src\Mes.Protocols.Database\Mes.Protocols.Database.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Mqtt\Mes.Protocols.Mqtt.csproj" />
   </ItemGroup>
 
 </Project>

@@ -20,6 +20,7 @@
 
     <!-- Protocol provider dependencies -->
     <PackageVersion Include="MQTTnet" Version="5.2.0.1603" />
+    <PackageVersion Include="MQTTnet.Server" Version="5.2.0.1603" />
     <PackageVersion Include="Workstation.UaClient" Version="3.2.3" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.1" />

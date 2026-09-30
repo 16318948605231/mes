@@ -1,6 +1,9 @@
 using System.Buffers;
+using System.Collections.Concurrent;
+using System.Text;
 using Mes.Core.Configuration;
 using Mes.Core.Enums;
+using Mes.Core.Exceptions;
 using Mes.Core.Transport;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
@@ -9,8 +12,9 @@ using MQTTnet.Protocol;
 namespace Mes.Protocols.Mqtt;
 
 /// <summary>
-/// MQTT 传输：支持发布/订阅语义（QoS 0/1/2、保留标志、TLS、用户名口令认证）。
-/// 适用于设备状态/检测结果/报警等遥测上报与服务器推送场景。
+/// MQTT 传输：支持发布/订阅语义（QoS 0/1/2、保留标志、TLS、用户名口令认证），
+/// 并基于 MQTT 5 的“响应主题 + 关联数据”实现请求/响应（RPC）以承载查询类操作。
+/// 适用于设备状态/检测结果/报警等遥测上报、服务器推送以及工单/配方等查询场景。
 /// </summary>
 public sealed class MqttTransport : MesTransportBase
 {
@@ -18,6 +22,12 @@ public sealed class MqttTransport : MesTransportBase
     private readonly IMqttClient _client;
     private readonly List<Subscription> _subscriptions = new();
     private readonly object _sync = new();
+
+    // 请求/响应（RPC）：关联标识 -> 等待中的响应。
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<TransportMessage>> _pendingRequests = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _responseSubscriptionGate = new(1, 1);
+    private string _responseTopicRoot = string.Empty;
+    private bool _responseSubscribed;
 
     /// <summary>构造。</summary>
     public MqttTransport(MesOptions options, ILogger? logger = null)
@@ -33,15 +43,22 @@ public sealed class MqttTransport : MesTransportBase
     public override MesProtocolKind Protocol => MesProtocolKind.Mqtt;
 
     /// <inheritdoc />
-    public override MesTransportCapabilities Capabilities => MesTransportCapabilities.Publish | MesTransportCapabilities.Subscribe;
+    public override MesTransportCapabilities Capabilities
+        => MesTransportCapabilities.Request | MesTransportCapabilities.Publish | MesTransportCapabilities.Subscribe;
 
     /// <inheritdoc />
     protected override async Task DoConnectAsync(CancellationToken cancellationToken)
     {
-        var host = _options.Endpoint.Host ?? throw new Mes.Core.Exceptions.MesConfigurationException("MQTT 需要设置 Endpoint.Host。");
+        var host = _options.Endpoint.Host ?? throw new MesConfigurationException("MQTT 需要设置 Endpoint.Host。");
         var useTls = _options.Endpoint.UseTls || _options.Tls.Enabled;
         var port = _options.Endpoint.Port ?? (useTls ? 8883 : 1883);
         var clientId = _options.GetProperty("ClientId") ?? $"{_options.Name}-{Guid.NewGuid():N}";
+
+        var prefix = _options.GetProperty("TopicPrefix") ?? "mes";
+        _responseTopicRoot = $"{prefix}/rpc/response/{clientId}";
+        // 断线重连后需重新订阅响应主题。
+        lock (_sync)
+            _responseSubscribed = false;
 
         var builder = new MqttClientOptionsBuilder()
             .WithTcpServer(host, port)
@@ -92,6 +109,86 @@ public sealed class MqttTransport : MesTransportBase
         await _client.PublishAsync(mqttMessage, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// 基于 MQTT 5 “响应主题 + 关联数据”实现请求/响应：把请求发布到操作主题（通道），
+    /// 并在专属响应主题上等待携带相同关联数据的回复。响应端（MES/网关）读取
+    /// <c>ResponseTopic</c> 与 <c>CorrelationData</c>，将结果发布回该响应主题即可。
+    /// </summary>
+    protected override async Task<TransportResponse> DoRequestAsync(TransportRequest request, CancellationToken cancellationToken)
+    {
+        await EnsureResponseSubscriptionAsync(cancellationToken).ConfigureAwait(false);
+
+        var correlationId = request.CorrelationId;
+        var responseTopic = $"{_responseTopicRoot}/{correlationId}";
+        var tcs = new TaskCompletionSource<TransportMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_pendingRequests.TryAdd(correlationId, tcs))
+            throw new MesTransportException($"MQTT 请求关联标识重复：{correlationId}。");
+
+        try
+        {
+            var builder = new MqttApplicationMessageBuilder()
+                .WithTopic(request.Channel)
+                .WithPayload(request.Body ?? Array.Empty<byte>())
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithResponseTopic(responseTopic)
+                .WithCorrelationData(Encoding.UTF8.GetBytes(correlationId));
+            if (!string.IsNullOrEmpty(request.ContentType))
+                builder = builder.WithContentType(request.ContentType);
+
+            await _client.PublishAsync(builder.Build(), cancellationToken).ConfigureAwait(false);
+
+            var timeoutMs = request.TimeoutMs ?? _options.TimeoutMs;
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (timeoutMs > 0)
+                timeoutCts.CancelAfter(timeoutMs);
+
+            using var registration = timeoutCts.Token.Register(
+                static state => ((TaskCompletionSource<TransportMessage>)state!).TrySetCanceled(),
+                tcs);
+
+            TransportMessage reply;
+            try
+            {
+                reply = await tcs.Task.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                return TransportResponse.Fail($"MQTT 请求在 {timeoutMs}ms 内未收到响应（主题 {request.Channel}）。", 504);
+            }
+
+            return TransportResponse.Ok(reply.Body, 200, reply.ContentType ?? "application/json");
+        }
+        finally
+        {
+            _pendingRequests.TryRemove(correlationId, out _);
+        }
+    }
+
+    /// <summary>确保已订阅本客户端的响应主题（首次请求时惰性建立，断线后重建）。</summary>
+    private async Task EnsureResponseSubscriptionAsync(CancellationToken cancellationToken)
+    {
+        if (Volatile.Read(ref _responseSubscribed))
+            return;
+
+        await _responseSubscriptionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_responseSubscribed)
+                return;
+
+            var options = new MqttClientSubscribeOptionsBuilder()
+                .WithTopicFilter(f => f.WithTopic($"{_responseTopicRoot}/#").WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce))
+                .Build();
+            await _client.SubscribeAsync(options, cancellationToken).ConfigureAwait(false);
+            lock (_sync)
+                _responseSubscribed = true;
+        }
+        finally
+        {
+            _responseSubscriptionGate.Release();
+        }
+    }
+
     /// <inheritdoc />
     protected override async Task<IAsyncDisposable> DoSubscribeAsync(string channel, Func<TransportMessage, CancellationToken, Task> handler, CancellationToken cancellationToken)
     {
@@ -122,6 +219,18 @@ public sealed class MqttTransport : MesTransportBase
             Retain = e.ApplicationMessage.Retain
         };
 
+        // 请求/响应：命中等待中的关联标识则作为 RPC 回复处理，不再派发给普通订阅者。
+        var correlationData = e.ApplicationMessage.CorrelationData;
+        if (correlationData is { Length: > 0 })
+        {
+            var correlationId = Encoding.UTF8.GetString(correlationData);
+            if (_pendingRequests.TryGetValue(correlationId, out var pending))
+            {
+                pending.TrySetResult(message);
+                return;
+            }
+        }
+
         RaiseMessageReceived(message);
 
         Subscription[] matches;
@@ -143,6 +252,13 @@ public sealed class MqttTransport : MesTransportBase
 
     private Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
     {
+        lock (_sync)
+            _responseSubscribed = false;
+
+        // 连接断开时立即失败所有等待中的请求，避免调用方一直等到超时。
+        foreach (var pending in _pendingRequests.Values)
+            pending.TrySetException(new MesTransportException($"MQTT 连接已断开（{e.Reason}），请求未完成。"));
+
         SetState(MesConnectionState.Disconnected, e.Reason.ToString());
         return Task.CompletedTask;
     }
@@ -180,7 +296,13 @@ public sealed class MqttTransport : MesTransportBase
     {
         _client.ApplicationMessageReceivedAsync -= OnMessageReceivedAsync;
         _client.DisconnectedAsync -= OnDisconnectedAsync;
+
+        foreach (var pending in _pendingRequests.Values)
+            pending.TrySetException(new MesTransportException("MQTT 传输已释放，请求未完成。"));
+        _pendingRequests.Clear();
+
         await base.DisposeAsync().ConfigureAwait(false);
+        _responseSubscriptionGate.Dispose();
         _client.Dispose();
     }
 
