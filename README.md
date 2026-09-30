@@ -1,5 +1,8 @@
 # MES 连接库（MES Connectivity Toolkit）
 
+[![CI](https://github.com/16318948605231/mes/actions/workflows/ci.yml/badge.svg)](https://github.com/16318948605231/mes/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+
 面向**机器视觉检测软件**与工厂 **MES 系统**对接的 C# / .NET 类库（多目标 **net8.0 / net10.0**）。
 一套协议无关的统一 API，让你的检测软件**换工厂时只改配置（甚至一行连接字符串）、不改业务代码**即可切换底层通信协议。
 
@@ -89,6 +92,16 @@ dotnet run --project samples/Mes.TestApp
 > WPF 界面（`net10.0-windows`）仅能在 Windows 上编译运行；其余库均为多目标 `net8.0;net10.0`（跨平台）。
 > 依赖版本集中于 `Directory.Packages.props`（中央包管理）。
 
+## 持续集成与发布
+
+- **CI（自动验证）**：[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) 在每次推送 / PR 上自动执行：
+  Linux 逐项目构建全部库（`net8.0;net10.0`）+ 运行全部单元测试 + 验证可打包；Windows 额外整体构建解决方案（含 WPF 界面）。
+- **发布**：[`.github/workflows/release.yml`](./.github/workflows/release.yml) 在推送 `v*` 标签时 `dotnet pack` 全部库，
+  并在配置了仓库密钥 `NUGET_API_KEY` 时推送到 NuGet（未配置则仅产出 `.nupkg`/`.snupkg` 工件）。
+- 面向真实 Broker 的集成测试默认跳过，设置 `MES_KAFKA_BOOTSTRAP` / `MES_AMQP_URI` / `MES_GRPC_URL` 环境变量后启用。
+
+详见 [打包发布与持续集成](./docs/07-打包发布与持续集成.md)。
+
 ## 许可
 
-MIT
+本项目采用 [MIT 许可证](./LICENSE)。

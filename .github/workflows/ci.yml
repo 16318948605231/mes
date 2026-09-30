@@ -1,0 +1,100 @@
+name: CI
+
+# 持续集成：对每次推送与 Pull Request 自动构建并运行测试，实现“自动验证完成”。
+on:
+  push:
+    branches: ["**"]
+    paths-ignore:
+      - "docs/**"
+      - "legacy/**"
+      - "**/*.md"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & Test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (8.0 LTS + 10.0)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build all libraries (net8.0;net10.0)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 逐项目构建跨平台库（WPF 样例为 net10.0-windows，位于 samples/ 下，不在此循环内）。
+          for proj in src/*/*.csproj; do
+            echo "::group::build $proj"
+            dotnet build "$proj" -c Release
+            echo "::endgroup::"
+          done
+
+      - name: Run unit tests
+        shell: bash
+        run: >-
+          dotnet test tests/Mes.Core.Tests/Mes.Core.Tests.csproj
+          -c Release
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory TestResults
+
+      - name: Build cross-platform sample (Mes.QuickStart)
+        run: dotnet build samples/Mes.QuickStart/Mes.QuickStart.csproj -c Release
+
+      - name: Verify NuGet packages can be produced
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          for proj in src/*/*.csproj; do
+            dotnet pack "$proj" -c Release -o artifacts
+          done
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts/*.nupkg
+          if-no-files-found: ignore
+
+  windows-full:
+    name: Build Full Solution (Windows, incl. WPF)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (8.0 LTS + 10.0)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build entire solution (includes WPF sample)
+        run: dotnet build Mes.slnx -c Release
+
+      - name: Run unit tests
+        run: dotnet test tests/Mes.Core.Tests/Mes.Core.Tests.csproj -c Release

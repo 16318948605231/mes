@@ -1,0 +1,57 @@
+name: Release
+
+# 发布：打 v* 标签（如 v1.1.0）时打包所有可发布库并（在配置了 NUGET_API_KEY 时）推送到 NuGet。
+# 未配置密钥时仅生成 .nupkg/.snupkg 工件，便于手动下载发布。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pack-publish:
+    name: Pack & Publish
+    runs-on: ubuntu-latest
+    env:
+      HAS_NUGET_KEY: ${{ secrets.NUGET_API_KEY != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (8.0 LTS + 10.0)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Pack all libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          for proj in src/*/*.csproj; do
+            echo "::group::pack $proj"
+            dotnet pack "$proj" -c Release -o artifacts
+            echo "::endgroup::"
+          done
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+
+      - name: Push to NuGet
+        if: env.HAS_NUGET_KEY == 'true'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: >-
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "$NUGET_API_KEY"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
