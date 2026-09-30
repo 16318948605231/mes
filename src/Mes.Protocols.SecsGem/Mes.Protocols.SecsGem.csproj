@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>$(MesLibraryTargetFrameworks)</TargetFrameworks>
     <Description>MES 连接库 - SECS/GEM (HSMS) 协议 Provider（基于 Secs4Net），面向半导体/电子设备。</Description>
   </PropertyGroup>
 

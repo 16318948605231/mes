@@ -50,6 +50,21 @@ public enum MesProtocolKind
     /// <summary>SECS/GEM（HSMS）——半导体 / 电子设备。</summary>
     SecsGem = 6,
 
+    /// <summary>SOAP / WCF Web Service（HTTP + XML 信封）。</summary>
+    Soap = 7,
+
+    /// <summary>Apache Kafka（事件流）。</summary>
+    Kafka = 8,
+
+    /// <summary>AMQP 0-9-1（RabbitMQ 等消息中间件）。</summary>
+    Amqp = 9,
+
+    /// <summary>WebSocket（双向实时通道，含 SignalR 友好约定）。</summary>
+    WebSocket = 10,
+
+    /// <summary>gRPC（HTTP/2 + Protobuf，通用 MES 网关契约）。</summary>
+    Grpc = 11,
+
     /// <summary>用户自定义协议。</summary>
     Custom = 99
 }

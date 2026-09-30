@@ -212,7 +212,11 @@ public sealed class RestTransport : MesTransportBase
         if (!string.IsNullOrWhiteSpace(certPath) && File.Exists(certPath))
         {
             var pwd = tls.ClientCertificatePassword ?? _options.Auth.CertificatePassword;
+#if NET9_0_OR_GREATER
             handler.ClientCertificates.Add(X509CertificateLoader.LoadPkcs12FromFile(certPath, pwd));
+#else
+            handler.ClientCertificates.Add(new X509Certificate2(certPath, pwd));
+#endif
         }
     }
 

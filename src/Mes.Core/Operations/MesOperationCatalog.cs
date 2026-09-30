@@ -160,4 +160,105 @@ public sealed class MesOperationCatalog
         c.Map(MesOperationKeys.CheckUnitPassed, $"{prefix}/query/gate/{{serialNumber}}/{{operationId}}", requestResponse: true, qos: 1);
         return c;
     }
+
+    /// <summary>
+    /// 创建一套 SOAP/WCF 默认映射：以 SOAPAction/操作名作为通道；查询类走请求/响应，
+    /// 上报类同样通过一次 SOAP 调用（大多数 SOAP MES 无单向语义）。
+    /// </summary>
+    public static MesOperationCatalog CreateSoapDefaults()
+    {
+        var c = new MesOperationCatalog();
+        c.Map(MesOperationKeys.GetWorkOrder, "GetWorkOrder", "POST");
+        c.Map(MesOperationKeys.GetUnit, "GetUnit", "POST");
+        c.Map(MesOperationKeys.GetRecipe, "GetRecipe", "POST");
+        c.Map(MesOperationKeys.GetTraceability, "GetTraceability", "POST");
+        c.Map(MesOperationKeys.CheckUnitPassed, "CheckUnitPassed", "POST");
+        c.Map(MesOperationKeys.ReportInspection, "ReportInspection", "POST");
+        c.Map(MesOperationKeys.ReportMeasurements, "ReportMeasurements", "POST");
+        c.Map(MesOperationKeys.UploadImage, "UploadImage", "POST");
+        c.Map(MesOperationKeys.ReportDeviceStatus, "ReportDeviceStatus", "POST");
+        c.Map(MesOperationKeys.RaiseAlarm, "RaiseAlarm", "POST");
+        c.Map(MesOperationKeys.ClearAlarm, "ClearAlarm", "POST");
+        return c;
+    }
+
+    /// <summary>
+    /// 创建一套 Kafka 默认主题映射：上报类为发布语义；查询类基于“回复主题 + 关联标识”走请求/响应。
+    /// </summary>
+    public static MesOperationCatalog CreateKafkaDefaults(string prefix = "mes")
+    {
+        var c = new MesOperationCatalog();
+        c.Map(MesOperationKeys.ReportInspection, $"{prefix}.inspection", requestResponse: false);
+        c.Map(MesOperationKeys.ReportMeasurements, $"{prefix}.measurement", requestResponse: false);
+        c.Map(MesOperationKeys.ReportDeviceStatus, $"{prefix}.device.status", requestResponse: false);
+        c.Map(MesOperationKeys.RaiseAlarm, $"{prefix}.alarm", requestResponse: false);
+        c.Map(MesOperationKeys.ClearAlarm, $"{prefix}.alarm.clear", requestResponse: false);
+        c.Map(MesOperationKeys.UploadImage, $"{prefix}.image", requestResponse: false);
+        c.Map(MesOperationKeys.GetWorkOrder, $"{prefix}.query.workorder", requestResponse: true);
+        c.Map(MesOperationKeys.GetUnit, $"{prefix}.query.unit", requestResponse: true);
+        c.Map(MesOperationKeys.GetRecipe, $"{prefix}.query.recipe", requestResponse: true);
+        c.Map(MesOperationKeys.GetTraceability, $"{prefix}.query.traceability", requestResponse: true);
+        c.Map(MesOperationKeys.CheckUnitPassed, $"{prefix}.query.gate", requestResponse: true);
+        return c;
+    }
+
+    /// <summary>
+    /// 创建一套 AMQP（RabbitMQ）默认路由键映射：上报类发布到主题交换机；查询类走 RPC（回复队列 + 关联标识）。
+    /// </summary>
+    public static MesOperationCatalog CreateAmqpDefaults(string prefix = "mes")
+    {
+        var c = new MesOperationCatalog();
+        c.Map(MesOperationKeys.ReportInspection, $"{prefix}.inspection", requestResponse: false);
+        c.Map(MesOperationKeys.ReportMeasurements, $"{prefix}.measurement", requestResponse: false);
+        c.Map(MesOperationKeys.ReportDeviceStatus, $"{prefix}.device.status", requestResponse: false);
+        c.Map(MesOperationKeys.RaiseAlarm, $"{prefix}.alarm", requestResponse: false);
+        c.Map(MesOperationKeys.ClearAlarm, $"{prefix}.alarm.clear", requestResponse: false);
+        c.Map(MesOperationKeys.UploadImage, $"{prefix}.image", requestResponse: false);
+        c.Map(MesOperationKeys.GetWorkOrder, $"{prefix}.query.workorder", requestResponse: true);
+        c.Map(MesOperationKeys.GetUnit, $"{prefix}.query.unit", requestResponse: true);
+        c.Map(MesOperationKeys.GetRecipe, $"{prefix}.query.recipe", requestResponse: true);
+        c.Map(MesOperationKeys.GetTraceability, $"{prefix}.query.traceability", requestResponse: true);
+        c.Map(MesOperationKeys.CheckUnitPassed, $"{prefix}.query.gate", requestResponse: true);
+        return c;
+    }
+
+    /// <summary>
+    /// 创建一套 WebSocket 默认通道映射：查询类走请求/响应（消息内 correlationId 关联）；上报类为发布。
+    /// </summary>
+    public static MesOperationCatalog CreateWebSocketDefaults(string prefix = "mes")
+    {
+        var c = new MesOperationCatalog();
+        c.Map(MesOperationKeys.ReportInspection, $"{prefix}/inspection", requestResponse: false);
+        c.Map(MesOperationKeys.ReportMeasurements, $"{prefix}/measurement", requestResponse: false);
+        c.Map(MesOperationKeys.ReportDeviceStatus, $"{prefix}/device/status", requestResponse: false);
+        c.Map(MesOperationKeys.RaiseAlarm, $"{prefix}/alarm", requestResponse: false);
+        c.Map(MesOperationKeys.ClearAlarm, $"{prefix}/alarm/clear", requestResponse: false);
+        c.Map(MesOperationKeys.UploadImage, $"{prefix}/image", requestResponse: false);
+        c.Map(MesOperationKeys.GetWorkOrder, $"{prefix}/query/workorder", requestResponse: true);
+        c.Map(MesOperationKeys.GetUnit, $"{prefix}/query/unit", requestResponse: true);
+        c.Map(MesOperationKeys.GetRecipe, $"{prefix}/query/recipe", requestResponse: true);
+        c.Map(MesOperationKeys.GetTraceability, $"{prefix}/query/traceability", requestResponse: true);
+        c.Map(MesOperationKeys.CheckUnitPassed, $"{prefix}/query/gate", requestResponse: true);
+        return c;
+    }
+
+    /// <summary>
+    /// 创建一套 gRPC 默认方法映射：通道即逻辑方法名，经由通用 <c>MesGateway</c> 契约（Invoke/Subscribe）承载。
+    /// </summary>
+    public static MesOperationCatalog CreateGrpcDefaults()
+    {
+        var c = new MesOperationCatalog();
+        c.Map(MesOperationKeys.GetWorkOrder, "GetWorkOrder", requestResponse: true);
+        c.Map(MesOperationKeys.GetUnit, "GetUnit", requestResponse: true);
+        c.Map(MesOperationKeys.GetRecipe, "GetRecipe", requestResponse: true);
+        c.Map(MesOperationKeys.GetTraceability, "GetTraceability", requestResponse: true);
+        c.Map(MesOperationKeys.CheckUnitPassed, "CheckUnitPassed", requestResponse: true);
+        c.Map(MesOperationKeys.ReportInspection, "ReportInspection", requestResponse: false);
+        c.Map(MesOperationKeys.ReportMeasurements, "ReportMeasurements", requestResponse: false);
+        c.Map(MesOperationKeys.UploadImage, "UploadImage", requestResponse: false);
+        c.Map(MesOperationKeys.ReportDeviceStatus, "ReportDeviceStatus", requestResponse: false);
+        c.Map(MesOperationKeys.RaiseAlarm, "RaiseAlarm", requestResponse: false);
+        c.Map(MesOperationKeys.ClearAlarm, "ClearAlarm", requestResponse: false);
+        return c;
+    }
 }

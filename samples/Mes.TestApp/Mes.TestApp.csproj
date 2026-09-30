@@ -12,6 +12,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
     <Description>MES 连接库的 WPF 测试界面：演示连接、查询、上报检测结果与图像传输（默认使用进程内回环 Provider，无需真实 MES 服务器）。</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>

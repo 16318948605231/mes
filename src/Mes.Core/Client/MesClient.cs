@@ -84,6 +84,36 @@ public sealed class MesClient : IMesClient
     public Task DisconnectAsync(CancellationToken cancellationToken = default)
         => _transport.DisconnectAsync(cancellationToken);
 
+    /// <inheritdoc />
+    public async Task<MesResult> TestConnectionAsync(CancellationToken cancellationToken = default)
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            if (_transport.State != MesConnectionState.Connected)
+                await _transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
+
+            sw.Stop();
+            return _transport.State == MesConnectionState.Connected
+                ? new MesResult { Success = true, Code = MesResultCodes.Ok, Message = $"连接正常（{_transport.Protocol}，{sw.ElapsedMilliseconds}ms）", ElapsedMilliseconds = sw.ElapsedMilliseconds }
+                : new MesResult { Success = false, Code = MesResultCodes.NotConnected, Message = $"连接未就绪，当前状态：{_transport.State}。", ElapsedMilliseconds = sw.ElapsedMilliseconds };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            sw.Stop();
+            return new MesResult { Success = false, Code = MesResultCodes.Cancelled, Message = "连通性自检已取消。", ElapsedMilliseconds = sw.ElapsedMilliseconds };
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            return new MesResult { Success = false, Code = MesResultCodes.ConnectionFailed, Message = $"连接失败：{ex.Message}", Exception = ex, ElapsedMilliseconds = sw.ElapsedMilliseconds };
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
+        => (await TestConnectionAsync(cancellationToken).ConfigureAwait(false)).Success;
+
     // ---------------- 查询类 ----------------
 
     /// <inheritdoc />

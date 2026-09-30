@@ -11,10 +11,34 @@
     <NeutralLanguage>zh-Hans</NeutralLanguage>
     <Company>MES Connectivity Toolkit</Company>
     <Product>MES Connectivity Toolkit</Product>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Copyright>Copyright (c) MES Connectivity Toolkit contributors</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/16318948605231/mes</RepositoryUrl>
   </PropertyGroup>
+
+  <!--
+    共享的多目标框架集合。库项目统一多目标 net8.0;net10.0，
+    以便 .NET 8 LTS 上位机/视觉软件也能直接引用（WPF 样例与测试项目自设目标框架，不受此影响）。
+  -->
+  <PropertyGroup>
+    <MesLibraryTargetFrameworks>net8.0;net10.0</MesLibraryTargetFrameworks>
+  </PropertyGroup>
+
+  <!-- NuGet 打包元数据（对可打包的库统一生效；测试/样例项目设 IsPackable=false 排除） -->
+  <PropertyGroup>
+    <Authors>MES Connectivity Toolkit contributors</Authors>
+    <PackageProjectUrl>https://github.com/16318948605231/mes</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>mes;manufacturing;machine-vision;industrial;iiot;connectivity</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- 可打包库统一附带仓库根 README 作为包说明（各库可用自己的 README 覆盖） -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false' AND Exists('$(MSBuildThisFileDirectory)README.md') AND '$(PackageReadmeFile)' == 'README.md'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
 
 </Project>

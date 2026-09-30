@@ -29,6 +29,18 @@ public interface IMesClient : IAsyncDisposable
     /// <summary>断开连接。</summary>
     Task DisconnectAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 连通性自检：尝试建立/校验与 MES 的连接，返回结构化结果（含耗时）。
+    /// 适合接入方在启动或配置向导中一行代码验证配置是否正确，失败时不会抛异常。
+    /// </summary>
+    Task<MesResult> TestConnectionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 轻量连通性探测：返回 <c>true</c> 表示当前可达（必要时会尝试建立连接），否则 <c>false</c>。
+    /// 是 <see cref="TestConnectionAsync"/> 的布尔便捷版本。
+    /// </summary>
+    Task<bool> PingAsync(CancellationToken cancellationToken = default);
+
     // ---- 查询类操作 ----
 
     /// <summary>查询工单。</summary>
