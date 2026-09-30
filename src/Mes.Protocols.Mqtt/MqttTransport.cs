@@ -252,9 +252,11 @@ public sealed class MqttTransport : MesTransportBase
     {
         Volatile.Write(ref _responseSubscribed, false);
 
-        // 连接断开时立即失败所有等待中的请求，避免调用方一直等到超时。
+        // 连接断开时立即失败所有等待中的请求，避免调用方一直等到超时；
+        // 清空字典以防重连后关联标识复用导致 TryAdd 冲突或条目泄漏。
         foreach (var pending in _pendingRequests.Values)
             pending.TrySetException(new MesTransportException($"MQTT 连接已断开（{e.Reason}），请求未完成。"));
+        _pendingRequests.Clear();
 
         SetState(MesConnectionState.Disconnected, e.Reason.ToString());
         return Task.CompletedTask;
