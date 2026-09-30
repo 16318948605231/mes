@@ -18,6 +18,7 @@ public sealed class DatabaseProviderTests : IDisposable
         => MesClientBuilder.Create()
             .UseDatabase($"Data Source={_dbPath}", provider: "Sqlite", configure: o => o.SetProperty("EnsureSchema", "true"))
             .MapOperation("SeedWorkOrder", "INSERT INTO mes_workorder(id,data) VALUES(@workOrderId,@json)", verb: "INSERT")
+            .MapOperation("CountClearedAlarms", "SELECT COUNT(*) FROM mes_alarm WHERE code=@alarmCode AND cleared_at IS NOT NULL", verb: "SELECT")
             .Build();
 
     [Fact]
@@ -61,6 +62,33 @@ public sealed class DatabaseProviderTests : IDisposable
         var read = await client.GetWorkOrderAsync("nope");
 
         Assert.False(read.Success);
+    }
+
+    [Fact]
+    public async Task ClearAlarm_UpdatesExistingRow_NotInsert()
+    {
+        var client = CreateClient();
+        await client.ConnectAsync();
+
+        // 触发报警（INSERT 一行，cleared_at 为空）
+        var raise = await client.RaiseAlarmAsync(new Alarm { Code = "E-DB-ALM", Text = "camera offline" });
+        Assert.True(raise.Success);
+
+        // 清除前：已清除计数应为 0
+        var before = await client.InvokeAsync<int>("CountClearedAlarms",
+            args: new Dictionary<string, object?> { ["alarmCode"] = "E-DB-ALM" });
+        Assert.True(before.Success);
+        Assert.Equal(0, before.Value);
+
+        // 解除报警（应为 UPDATE，回填 cleared_at）
+        var clear = await client.ClearAlarmAsync("E-DB-ALM");
+        Assert.True(clear.Success);
+
+        // 清除后：已清除计数应为 1（说明是更新既有行，而非再插入一条新报警）
+        var after = await client.InvokeAsync<int>("CountClearedAlarms",
+            args: new Dictionary<string, object?> { ["alarmCode"] = "E-DB-ALM" });
+        Assert.True(after.Success);
+        Assert.Equal(1, after.Value);
     }
 
     public void Dispose()

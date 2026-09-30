@@ -164,7 +164,7 @@ public sealed class DatabaseTransport : MesTransportBase
             CREATE TABLE IF NOT EXISTS mes_inspection(id INTEGER PRIMARY KEY AUTOINCREMENT, sn TEXT, data TEXT, created_at TEXT);
             CREATE TABLE IF NOT EXISTS mes_measurement(id INTEGER PRIMARY KEY AUTOINCREMENT, sn TEXT, data TEXT, created_at TEXT);
             CREATE TABLE IF NOT EXISTS mes_device_status(id INTEGER PRIMARY KEY AUTOINCREMENT, device_id TEXT, data TEXT, created_at TEXT);
-            CREATE TABLE IF NOT EXISTS mes_alarm(id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, data TEXT, created_at TEXT);
+            CREATE TABLE IF NOT EXISTS mes_alarm(id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, data TEXT, created_at TEXT, cleared_at TEXT);
             CREATE TABLE IF NOT EXISTS mes_image(id TEXT PRIMARY KEY, data TEXT, created_at TEXT);
             """;
         await using var cmd = _connection!.CreateCommand();

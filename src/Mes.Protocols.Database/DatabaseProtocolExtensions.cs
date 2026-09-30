@@ -39,7 +39,7 @@ public sealed class DatabaseTransportFactory : IMesTransportFactory
         c.Map(MesOperationKeys.ReportMeasurements, "INSERT INTO mes_measurement(sn,data,created_at) VALUES(@serialNumber,@json,@now)", "INSERT");
         c.Map(MesOperationKeys.ReportDeviceStatus, "INSERT INTO mes_device_status(device_id,data,created_at) VALUES(@deviceId,@json,@now)", "INSERT");
         c.Map(MesOperationKeys.RaiseAlarm, "INSERT INTO mes_alarm(code,data,created_at) VALUES(@alarmCode,@json,@now)", "INSERT");
-        c.Map(MesOperationKeys.ClearAlarm, "INSERT INTO mes_alarm(code,data,created_at) VALUES(@alarmCode,@json,@now)", "INSERT");
+        c.Map(MesOperationKeys.ClearAlarm, "UPDATE mes_alarm SET cleared_at=@now WHERE code=@alarmCode AND cleared_at IS NULL", "UPDATE");
         c.Map(MesOperationKeys.UploadImage, "INSERT INTO mes_image(id,data,created_at) VALUES(@imageId,@json,@now)", "INSERT", requestResponse: false);
         return c;
     }

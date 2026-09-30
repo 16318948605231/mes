@@ -154,39 +154,43 @@ public sealed class FileDropTransport : MesTransportBase
             _watcher.Created += OnCreated;
         }
 
-        private async void OnCreated(object sender, FileSystemEventArgs e)
+        private void OnCreated(object sender, FileSystemEventArgs e)
         {
             if (e.Name is not null && e.Name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
                 return;
-            try
+
+            // 显式以 Task 方式处理并观察异常，避免 async void 的未捕获异常导致进程崩溃。
+            _ = ProcessFileAsync(e).ContinueWith(
+                t => _transport.RaiseError(t.Exception!.GetBaseException(), "FileDropWatcher"),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
+        }
+
+        private async Task ProcessFileAsync(FileSystemEventArgs e)
+        {
+            // 等待写入方完成
+            await Task.Delay(50).ConfigureAwait(false);
+            byte[] bytes;
+            try { bytes = await File.ReadAllBytesAsync(e.FullPath).ConfigureAwait(false); }
+            catch (IOException) { await Task.Delay(150).ConfigureAwait(false); bytes = await File.ReadAllBytesAsync(e.FullPath).ConfigureAwait(false); }
+
+            var message = new TransportMessage
             {
-                // 等待写入方完成
-                await Task.Delay(50).ConfigureAwait(false);
-                byte[] bytes;
-                try { bytes = await File.ReadAllBytesAsync(e.FullPath).ConfigureAwait(false); }
-                catch (IOException) { await Task.Delay(150).ConfigureAwait(false); bytes = await File.ReadAllBytesAsync(e.FullPath).ConfigureAwait(false); }
+                Channel = _channel,
+                Body = bytes,
+                ContentType = "application/json"
+            };
+            message.Headers["fileName"] = e.Name ?? string.Empty;
 
-                var message = new TransportMessage
-                {
-                    Channel = _channel,
-                    Body = bytes,
-                    ContentType = "application/json"
-                };
-                message.Headers["fileName"] = e.Name ?? string.Empty;
+            _transport.RaiseMessageReceived(message);
+            await _handler(message, CancellationToken.None).ConfigureAwait(false);
 
-                _transport.RaiseMessageReceived(message);
-                await _handler(message, CancellationToken.None).ConfigureAwait(false);
-
-                // 归档已处理文件
-                var processedDir = Path.Combine(_folder, _transport.ProcessedFolder);
-                Directory.CreateDirectory(processedDir);
-                var dest = Path.Combine(processedDir, e.Name ?? Path.GetFileName(e.FullPath));
-                File.Move(e.FullPath, dest, overwrite: true);
-            }
-            catch (Exception ex)
-            {
-                _transport.RaiseError(ex, "FileDropWatcher");
-            }
+            // 归档已处理文件
+            var processedDir = Path.Combine(_folder, _transport.ProcessedFolder);
+            Directory.CreateDirectory(processedDir);
+            var dest = Path.Combine(processedDir, e.Name ?? Path.GetFileName(e.FullPath));
+            File.Move(e.FullPath, dest, overwrite: true);
         }
 
         public ValueTask DisposeAsync()
