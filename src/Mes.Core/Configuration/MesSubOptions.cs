@@ -87,6 +87,27 @@ public sealed class MesRetryOptions
 }
 
 /// <summary>
+/// 自动重连配置：连接因故障中断后，客户端可自动重连并恢复此前的订阅。
+/// </summary>
+public sealed class MesReconnectOptions
+{
+    /// <summary>是否启用自动重连（默认启用）。</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>首次重连前的延迟（毫秒）。</summary>
+    public int InitialDelayMs { get; set; } = 1_000;
+
+    /// <summary>最大重连延迟（毫秒）。</summary>
+    public int MaxDelayMs { get; set; } = 30_000;
+
+    /// <summary>指数退避因子。</summary>
+    public double BackoffFactor { get; set; } = 2.0;
+
+    /// <summary>最大重连尝试次数；0 表示无限重试。</summary>
+    public int MaxAttempts { get; set; }
+}
+
+/// <summary>
 /// TLS 配置。
 /// </summary>
 public sealed class MesTlsOptions

@@ -25,6 +25,9 @@ public sealed class MesClient : IMesClient
     private readonly MesOptions _options;
     private readonly ILogger _logger;
     private readonly RetryExecutor _retry;
+    private readonly List<ResilientSubscription> _subscriptions = new();
+    private readonly object _subLock = new();
+    private int _reconnecting;
     private bool _disposed;
 
     /// <summary>构造。</summary>
@@ -71,7 +74,102 @@ public sealed class MesClient : IMesClient
     public event EventHandler<MesErrorEventArgs>? ErrorOccurred;
 
     private void OnTransportStateChanged(object? sender, MesConnectionStateChangedEventArgs e)
-        => ConnectionStateChanged?.Invoke(this, e);
+    {
+        ConnectionStateChanged?.Invoke(this, e);
+
+        if (e.Current == MesConnectionState.Faulted
+            && _options.Reconnect.Enabled
+            && !_disposed
+            && HasActiveSubscriptions())
+        {
+            StartReconnectLoop();
+        }
+    }
+
+    private bool HasActiveSubscriptions()
+    {
+        lock (_subLock)
+            return _subscriptions.Count > 0;
+    }
+
+    private void StartReconnectLoop()
+    {
+        // 单飞：仅允许一个重连循环在运行。
+        if (Interlocked.CompareExchange(ref _reconnecting, 1, 0) != 0)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await ReconnectLoopAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "自动重连循环异常终止。");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _reconnecting, 0);
+            }
+        });
+    }
+
+    private async Task ReconnectLoopAsync()
+    {
+        var opts = _options.Reconnect;
+        var delay = Math.Max(1, opts.InitialDelayMs);
+        var attempt = 0;
+
+        while (!_disposed && HasActiveSubscriptions())
+        {
+            attempt++;
+            try
+            {
+                await Task.Delay(delay).ConfigureAwait(false);
+
+                if (_disposed || !HasActiveSubscriptions())
+                    return;
+
+                _logger.LogInformation("尝试自动重连（第 {Attempt} 次）……", attempt);
+                await _transport.ConnectAsync().ConfigureAwait(false);
+
+                // 重连成功：恢复全部订阅。
+                ResilientSubscription[] snapshot;
+                lock (_subLock)
+                    snapshot = _subscriptions.ToArray();
+
+                foreach (var sub in snapshot)
+                {
+                    if (_disposed)
+                        return;
+                    try
+                    {
+                        await sub.ResubscribeAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "频道 {Channel} 重新订阅失败。", sub.Channel);
+                    }
+                }
+
+                _logger.LogInformation("自动重连成功，已恢复 {Count} 个订阅。", snapshot.Length);
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "第 {Attempt} 次重连失败。", attempt);
+
+                if (opts.MaxAttempts > 0 && attempt >= opts.MaxAttempts)
+                {
+                    _logger.LogError("已达到最大重连次数 {Max}，停止自动重连。", opts.MaxAttempts);
+                    return;
+                }
+
+                delay = (int)Math.Min(opts.MaxDelayMs, delay * Math.Max(1.0, opts.BackoffFactor));
+            }
+        }
+    }
 
     private void OnTransportError(object? sender, MesErrorEventArgs e)
         => ErrorOccurred?.Invoke(this, e);
@@ -293,7 +391,8 @@ public sealed class MesClient : IMesClient
     public async Task<IAsyncDisposable> SubscribeAsync<T>(string channel, Func<T, CancellationToken, Task> handler, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        return await _transport.SubscribeAsync(channel, async (msg, c) =>
+
+        Func<TransportMessage, CancellationToken, Task> lowLevel = async (msg, c) =>
         {
             try
             {
@@ -307,7 +406,63 @@ public sealed class MesClient : IMesClient
             var obj = _serializer.Deserialize<T>(msg.Body);
             if (obj is not null)
                 await handler(obj, c).ConfigureAwait(false);
-        }, cancellationToken).ConfigureAwait(false);
+        };
+
+        var inner = await _transport.SubscribeAsync(channel, lowLevel, cancellationToken).ConfigureAwait(false);
+        var sub = new ResilientSubscription(this, channel, lowLevel, inner);
+        lock (_subLock)
+            _subscriptions.Add(sub);
+        return sub;
+    }
+
+    /// <summary>
+    /// 客户端级别的弹性订阅句柄：记录频道与低层回调，连接故障重连后可自动重新订阅。
+    /// </summary>
+    private sealed class ResilientSubscription : IAsyncDisposable
+    {
+        private readonly MesClient _owner;
+        private IAsyncDisposable _inner;
+        private bool _disposed;
+
+        public ResilientSubscription(MesClient owner, string channel, Func<TransportMessage, CancellationToken, Task> callback, IAsyncDisposable inner)
+        {
+            _owner = owner;
+            Channel = channel;
+            Callback = callback;
+            _inner = inner;
+        }
+
+        public string Channel { get; }
+
+        public Func<TransportMessage, CancellationToken, Task> Callback { get; }
+
+        public bool IsDisposed => _disposed;
+
+        /// <summary>重连后重新建立底层订阅。</summary>
+        public async Task ResubscribeAsync(CancellationToken cancellationToken)
+        {
+            if (_disposed)
+                return;
+            try
+            {
+                await _inner.DisposeAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                // 旧句柄释放失败可忽略，底层连接可能已断。
+            }
+            _inner = await _owner._transport.SubscribeAsync(Channel, Callback, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            lock (_owner._subLock)
+                _owner._subscriptions.Remove(this);
+            await _inner.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
@@ -343,14 +498,32 @@ public sealed class MesClient : IMesClient
         if (_options.AutoConnect)
             await EnsureConnectedSafeAsync(cancellationToken).ConfigureAwait(false);
 
-        return await _retry.ExecuteAsync(
-            c => _transport.RequestAsync(request, c),
-            r => ShouldRetry(r),
-            cancellationToken).ConfigureAwait(false);
+        using var activity = Diagnostics.MesDiagnostics.StartOperation(operationKey, _transport.Protocol.ToString(), "request");
+        var sw = Stopwatch.StartNew();
+        TransportResponse response;
+        try
+        {
+            response = await _retry.ExecuteAsync(
+                c => _transport.RequestAsync(request, c),
+                r => ShouldRetry(r),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            sw.Stop();
+            Diagnostics.MesDiagnostics.Record(operationKey, _transport.Protocol.ToString(), "request", success: false, sw.Elapsed.TotalMilliseconds);
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        sw.Stop();
+        Diagnostics.MesDiagnostics.Record(operationKey, _transport.Protocol.ToString(), "request", response.Success, sw.Elapsed.TotalMilliseconds);
+        activity?.SetStatus(response.Success ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+        return response;
     }
 
     private async Task<MesResult> PublishInternalAsync(string operationKey, object? payload, IReadOnlyDictionary<string, object?> args, CancellationToken cancellationToken)
     {
+        using var activity = Diagnostics.MesDiagnostics.StartOperation(operationKey, _transport.Protocol.ToString(), "publish");
         var sw = Stopwatch.StartNew();
         try
         {
@@ -363,14 +536,22 @@ public sealed class MesClient : IMesClient
 
             await _transport.PublishAsync(msg, cancellationToken).ConfigureAwait(false);
             sw.Stop();
+            Diagnostics.MesDiagnostics.Record(operationKey, _transport.Protocol.ToString(), "publish", success: true, sw.Elapsed.TotalMilliseconds);
+            activity?.SetStatus(ActivityStatusCode.Ok);
             return new MesResult { Success = true, Code = MesResultCodes.Ok, CorrelationId = msg.CorrelationId, ElapsedMilliseconds = sw.ElapsedMilliseconds };
         }
         catch (OperationCanceledException)
         {
+            sw.Stop();
+            Diagnostics.MesDiagnostics.Record(operationKey, _transport.Protocol.ToString(), "publish", success: false, sw.Elapsed.TotalMilliseconds);
+            activity?.SetStatus(ActivityStatusCode.Error);
             return MesResult.Fail(MesResultCodes.Cancelled, "操作已取消。");
         }
         catch (Exception ex)
         {
+            sw.Stop();
+            Diagnostics.MesDiagnostics.Record(operationKey, _transport.Protocol.ToString(), "publish", success: false, sw.Elapsed.TotalMilliseconds);
+            activity?.SetStatus(ActivityStatusCode.Error);
             return MesResult.FromException(ex);
         }
     }

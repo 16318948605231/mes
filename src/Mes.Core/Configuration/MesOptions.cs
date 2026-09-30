@@ -23,6 +23,9 @@ public sealed class MesOptions
     /// <summary>重试配置。</summary>
     public MesRetryOptions Retry { get; set; } = new();
 
+    /// <summary>自动重连配置。</summary>
+    public MesReconnectOptions Reconnect { get; set; } = new();
+
     /// <summary>TLS 配置。</summary>
     public MesTlsOptions Tls { get; set; } = new();
 
