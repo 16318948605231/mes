@@ -89,7 +89,7 @@ public sealed class FileDropTransport : MesTransportBase
         // 若 channel 看起来是目录（无扩展名），则生成唯一文件名
         if (string.IsNullOrEmpty(Path.GetExtension(path)))
         {
-            var fileName = $"{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}.json";
+            var fileName = $"{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}.json";
             path = Path.Combine(path, fileName);
         }
 
