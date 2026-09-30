@@ -133,7 +133,13 @@ public sealed class OpcUaTransport : MesTransportBase
             }
         };
         var response = await _channel!.WriteAsync(write, cancellationToken).ConfigureAwait(false);
-        var status = response.Results is { Length: > 0 } ? response.Results[0] : default;
+        if (response.Results is not { Length: > 0 })
+            return TransportResponse.Fail("OPC UA 写入未返回结果状态。", 502);
+
+        var status = response.Results[0];
+        if (!StatusCode.IsGood(status))
+            return TransportResponse.Fail($"OPC UA 写入失败，状态码 0x{status.Value:X8}。", 502);
+
         var payload = Encoding.UTF8.GetBytes($"{{\"status\":{status.Value}}}");
         return TransportResponse.Ok(payload, 200, "application/json");
     }
@@ -156,7 +162,12 @@ public sealed class OpcUaTransport : MesTransportBase
         };
         var response = await _channel!.CallAsync(call, cancellationToken).ConfigureAwait(false);
         var result = response.Results is { Length: > 0 } ? response.Results[0] : null;
-        var outputs = result?.OutputArguments?.Select(v => v.Value).ToArray() ?? Array.Empty<object?>();
+        if (result is null)
+            return TransportResponse.Fail("OPC UA 方法调用未返回结果。", 502);
+        if (!StatusCode.IsGood(result.StatusCode))
+            return TransportResponse.Fail($"OPC UA 方法调用失败，状态码 0x{result.StatusCode.Value:X8}。", 502);
+
+        var outputs = result.OutputArguments?.Select(v => v.Value).ToArray() ?? Array.Empty<object?>();
         return TransportResponse.Ok(JsonSerializer.SerializeToUtf8Bytes(outputs), 200, "application/json");
     }
 

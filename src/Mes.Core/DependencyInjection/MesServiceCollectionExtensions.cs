@@ -35,14 +35,23 @@ public static class MesServiceCollectionExtensions
     /// <summary>
     /// 注册一个默认 <see cref="IMesClient"/> 单例（根据给定配置创建）。
     /// </summary>
+    /// <remarks>
+    /// 默认客户端绑定到<b>本次调用</b>提供的具体 <see cref="MesOptions"/> 实例（由闭包捕获），
+    /// 因此不受容器中其它 <see cref="MesOptions"/> 注册顺序影响；多次调用时按 <c>TryAdd</c> 语义保留首个默认客户端，
+    /// 其余具名配置仍可经 <see cref="IMesClientFactory.Create(string)"/> 解析。
+    /// </remarks>
     public static IServiceCollection AddMesClient(this IServiceCollection services, Action<MesOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
-        services.AddMesOptions(configure);
+        services.AddMesCore();
+
+        var options = new MesOptions();
+        configure(options);
+        services.AddSingleton(options);
+
         services.TryAddSingleton<IMesClient>(sp =>
         {
             var factory = sp.GetRequiredService<IMesClientFactory>();
-            var options = sp.GetServices<MesOptions>().Last();
             return factory.Create(options);
         });
         return services;
