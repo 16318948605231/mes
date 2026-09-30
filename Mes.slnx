@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mes.Core/Mes.Core.csproj" />
+    <Project Path="src/Mes.Protocols.Database/Mes.Protocols.Database.csproj" />
+    <Project Path="src/Mes.Protocols.FileDrop/Mes.Protocols.FileDrop.csproj" />
+    <Project Path="src/Mes.Protocols.InMemory/Mes.Protocols.InMemory.csproj" />
+    <Project Path="src/Mes.Protocols.Mqtt/Mes.Protocols.Mqtt.csproj" />
+    <Project Path="src/Mes.Protocols.OpcUa/Mes.Protocols.OpcUa.csproj" />
+    <Project Path="src/Mes.Protocols.Rest/Mes.Protocols.Rest.csproj" />
+    <Project Path="src/Mes.Protocols.SecsGem/Mes.Protocols.SecsGem.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mes.Core.Tests/Mes.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Mes.TestApp/Mes.TestApp.csproj" />
+  </Folder>
+</Solution>

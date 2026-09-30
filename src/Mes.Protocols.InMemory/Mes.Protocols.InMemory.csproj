@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>MES 连接库 - 进程内回环协议 Provider（用于单元测试与界面演示，无需外部服务器）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mes.Core\Mes.Core.csproj" />
+  </ItemGroup>
+
+</Project>
