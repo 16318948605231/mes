@@ -110,7 +110,11 @@ public sealed class OpcUaTransport : MesTransportBase
         };
         var response = await _channel!.ReadAsync(read, cancellationToken).ConfigureAwait(false);
         var dv = response.Results is { Length: > 0 } ? response.Results[0] : null;
-        if (dv?.Value is null)
+        if (dv is null)
+            return TransportResponse.Fail("OPC UA 读取未返回结果。", 502);
+        if (!StatusCode.IsGood(dv.StatusCode))
+            return TransportResponse.Fail($"OPC UA 读取失败，状态码 0x{dv.StatusCode.Value:X8}。", 502);
+        if (dv.Value is null)
             return new TransportResponse { Success = false, StatusCode = 404, ErrorMessage = "节点无值或不存在。" };
 
         var body = dv.Value is string s ? Encoding.UTF8.GetBytes(s) : JsonSerializer.SerializeToUtf8Bytes(dv.Value);
