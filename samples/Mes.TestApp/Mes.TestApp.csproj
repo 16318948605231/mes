@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    WPF 测试界面（仅可在 Windows 上编译运行，需要 .NET 10 桌面运行时）。
+    Linux/CI 无法编译 net10.0-windows 目标；请在 Windows 上运行：
+        dotnet run  (project = samples/Mes.TestApp)
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Description>MES 连接库的 WPF 测试界面：演示连接、查询、上报检测结果与图像传输（默认使用进程内回环 Provider，无需真实 MES 服务器）。</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Mes.Core\Mes.Core.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.InMemory\Mes.Protocols.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Rest\Mes.Protocols.Rest.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.FileDrop\Mes.Protocols.FileDrop.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Mqtt\Mes.Protocols.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\Mes.Protocols.Database\Mes.Protocols.Database.csproj" />
+  </ItemGroup>
+
+</Project>
