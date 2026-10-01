@@ -1,8 +1,10 @@
 using Mes.Core.Client;
 using Mes.Core.Configuration;
 using Mes.Core.Serialization;
+using Mes.Core.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Mes.Core.DependencyInjection;
 
@@ -53,6 +55,24 @@ public static class MesServiceCollectionExtensions
         {
             var factory = sp.GetRequiredService<IMesClientFactory>();
             return factory.Create(options);
+        });
+        return services;
+    }
+
+    /// <summary>
+    /// 注册配置驱动的工作流宿主 <see cref="IMesWorkflowHost"/>，供“场景剧本”调用。
+    /// 依赖容器中已注册的 <see cref="IMesClient"/> 与 <see cref="MesOptions"/>
+    /// （如先调用 <see cref="AddMesClient"/> 或聚合包的 <c>AddMes</c>）。
+    /// </summary>
+    public static IServiceCollection AddMesWorkflows(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<IMesWorkflowHost>(sp =>
+        {
+            var client = sp.GetRequiredService<IMesClient>();
+            var options = sp.GetRequiredService<MesOptions>();
+            var logger = sp.GetService<ILogger<MesWorkflowHost>>();
+            return new MesWorkflowHost(client, options, logger);
         });
         return services;
     }

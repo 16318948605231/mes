@@ -79,6 +79,7 @@ public static class MesAggregateServiceCollectionExtensions
             var factory = sp.GetRequiredService<IMesClientFactory>();
             return factory.Create(options);
         });
+        services.AddMesWorkflows();
         return services;
     }
 }

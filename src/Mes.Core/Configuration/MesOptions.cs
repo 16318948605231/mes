@@ -1,5 +1,6 @@
 using Mes.Core.Enums;
 using Mes.Core.Operations;
+using Mes.Core.Workflow;
 
 namespace Mes.Core.Configuration;
 
@@ -8,6 +9,12 @@ namespace Mes.Core.Configuration;
 /// </summary>
 public sealed class MesOptions
 {
+    /// <summary>
+    /// 是否启用 MES 交互（总开关）。为 <c>false</c> 时，<see cref="Workflow.IMesWorkflowHost"/>
+    /// 的所有阶段调用都会变成安全空操作（立即返回成功），便于接入方“一键关闭 MES”而无需改代码。
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
     /// <summary>客户端名称（多实例区分，默认 "default"）。</summary>
     public string Name { get; set; } = "default";
 
@@ -48,6 +55,15 @@ public sealed class MesOptions
     /// 操作绑定覆盖列表。用于覆盖某个协议的默认操作映射，或新增自定义操作。
     /// </summary>
     public IList<MesOperationBinding> OperationBindings { get; set; } = new List<MesOperationBinding>();
+
+    /// <summary>
+    /// 配置驱动的检测流程（“场景剧本”）：阶段名 → 有序步骤列表。
+    /// 推荐阶段约定：<c>OnStartup / BeforeInspection / DuringInspection / AfterInspection /
+    /// OnPass / OnFail / OnAlarm / OnShutdown</c>（阶段名由应用自定，库不写死）。
+    /// 由 <see cref="Workflow.IMesWorkflowHost"/> 解释执行，使“每个阶段做哪些 MES 交互”完全来自配置文件。
+    /// </summary>
+    public IDictionary<string, List<MesWorkflowStep>> Workflows { get; set; }
+        = new Dictionary<string, List<MesWorkflowStep>>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// 协议特有属性（键值对）。例如 MQTT 的 ClientId/TopicPrefix，
