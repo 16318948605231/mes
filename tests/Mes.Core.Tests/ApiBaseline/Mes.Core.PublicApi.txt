@@ -157,9 +157,11 @@ TYPE class Mes.Core.Configuration.MesOptions
   method MesOptions SetProperty(String, String)
   method String GetProperty(String, String)
   property Boolean AutoConnect
+  property Boolean Enabled
   property IDictionary`2 DefaultHeaders
   property IDictionary`2 DefaultParameters
   property IDictionary`2 Properties
+  property IDictionary`2 Workflows
   property IList`1 OperationBindings
   property Int32 TimeoutMs
   property MesAuthOptions Auth
@@ -196,6 +198,7 @@ TYPE class Mes.Core.DependencyInjection.MesServiceCollectionExtensions
   method IServiceCollection AddMesClient(IServiceCollection, Action`1)
   method IServiceCollection AddMesCore(IServiceCollection)
   method IServiceCollection AddMesOptions(IServiceCollection, Action`1)
+  method IServiceCollection AddMesWorkflows(IServiceCollection)
 TYPE class Mes.Core.Diagnostics.MesDiagnostics
   field ActivitySource ActivitySource
   field Counter`1 Operations
@@ -678,3 +681,63 @@ TYPE class Mes.Core.Transport.TransportResponse
   property String ContentType
   property String CorrelationId
   property String ErrorMessage
+TYPE interface Mes.Core.Workflow.IMesWorkflowHost
+  method Boolean HasPhase(String)
+  method MesWorkflowContext CreateContext()
+  method Task`1 RunAsync(String, MesWorkflowContext, CancellationToken)
+  property Boolean Enabled
+  property IReadOnlyCollection`1 Phases
+TYPE class Mes.Core.Workflow.MesConditionEvaluator
+  method Boolean Evaluate(String, MesWorkflowContext)
+TYPE class Mes.Core.Workflow.MesWorkflowContext
+  ctor ()
+  ctor (IEnumerable`1)
+  method Boolean Remove(String)
+  method Boolean TryGet(String, Object&)
+  method Boolean TryResolvePath(String, Object&)
+  method MesWorkflowContext Set(String, Object)
+  method Object Get(String)
+  property IDictionary`2 Variables
+TYPE enum Mes.Core.Workflow.MesWorkflowErrorBehavior
+  field Int32 value__
+  field MesWorkflowErrorBehavior Alarm
+  field MesWorkflowErrorBehavior Continue
+  field MesWorkflowErrorBehavior Stop
+TYPE class Mes.Core.Workflow.MesWorkflowHost
+  ctor (IMesClient, MesOptions, ILogger`1)
+  method Boolean HasPhase(String)
+  method MesWorkflowContext CreateContext()
+  method Task`1 RunAsync(String, MesWorkflowContext, CancellationToken)
+  property Boolean Enabled
+  property IReadOnlyCollection`1 Phases
+TYPE class Mes.Core.Workflow.MesWorkflowResult
+  ctor ()
+  method MesWorkflowResult NoOp(String, String)
+  method String ToString()
+  property Boolean Skipped
+  property Boolean Success
+  property IReadOnlyList`1 Steps
+  property Int64 ElapsedMilliseconds
+  property String Message
+  property String Phase
+TYPE class Mes.Core.Workflow.MesWorkflowStep
+  ctor ()
+  property Boolean Optional
+  property IDictionary`2 Args
+  property IDictionary`2 Payload
+  property MesWorkflowErrorBehavior OnError
+  property Nullable`1 TimeoutMs
+  property String CaptureTo
+  property String Name
+  property String Operation
+  property String PayloadFrom
+  property String When
+TYPE class Mes.Core.Workflow.MesWorkflowStepResult
+  ctor ()
+  property Boolean Skipped
+  property Boolean Success
+  property Int64 ElapsedMilliseconds
+  property MesResult Result
+  property String Message
+  property String Operation
+  property String Step

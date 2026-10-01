@@ -88,7 +88,17 @@ public sealed class MesWorkflowContext
                 return false;
 
             case IDictionary<string, object?> typed:
-                return typed.TryGetValue(name, out value);
+                if (typed.TryGetValue(name, out value))
+                    return true;
+                foreach (var kv in typed)
+                {
+                    if (string.Equals(kv.Key, name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = kv.Value;
+                        return true;
+                    }
+                }
+                return false;
 
             case IDictionary raw:
                 foreach (DictionaryEntry e in raw)
