@@ -19,6 +19,7 @@
     <Project Path="tests/Mes.Core.Tests/Mes.Core.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
+    <Project Path="samples/Mes.ConfigDriven/Mes.ConfigDriven.csproj" />
     <Project Path="samples/Mes.QuickStart/Mes.QuickStart.csproj" />
     <Project Path="samples/Mes.TestApp/Mes.TestApp.csproj" />
   </Folder>

@@ -55,6 +55,12 @@ jobs:
       - name: Build cross-platform sample (Mes.QuickStart)
         run: dotnet build samples/Mes.QuickStart/Mes.QuickStart.csproj -c Release
 
+      - name: Build cross-platform sample (Mes.ConfigDriven)
+        run: dotnet build samples/Mes.ConfigDriven/Mes.ConfigDriven.csproj -c Release
+
+      - name: Smoke-run config-driven sample (mem://, zero external deps)
+        run: dotnet run --project samples/Mes.ConfigDriven/Mes.ConfigDriven.csproj -c Release --no-build
+
       - name: Verify NuGet packages can be produced
         shell: bash
         run: |
