@@ -15,6 +15,7 @@
 - **极简接入**：一行连接字符串 `MesClients.Connect("mqtt://host:1883")` 直接创建客户端；或 `AddMes(configuration)` 从 `appsettings.json` 自动选协议并注册 Provider。
 - **连通性自检**：`TestConnectionAsync()` / `PingAsync()` 一行验证配置是否正确。
 - **配置驱动 + 操作目录**：业务操作到协议通道（URL/主题/SQL/NodeId/SxFy）的映射可覆盖，适配任意工厂接口。
+- **配置驱动的检测流程（场景剧本）**：检测软件只触发“阶段”（检测前/中/后……），**每阶段做哪些 MES 交互全写在配置里**；换厂只换配置、代码零改动，`Enabled=false` 即全部空操作。见 [docs/08](./docs/08-配置驱动的检测流程(场景剧本).md)。
 - **图像双模**：逐张图像可选**内嵌**或**单独上传**，超阈值自动切换。
 - **稳健性与可观测性**：自动重连 + 自动重订阅（`MesReconnectOptions`）、`MesDiagnostics`（ActivitySource + Meter，可接入 OpenTelemetry）、完善的强类型事件、结果封装与重试。
 - **WPF 测试界面** + **跨平台控制台样例** + **xUnit 单元/端到端测试**。
@@ -28,6 +29,7 @@ src/Mes.Protocols.*         各协议 Provider（InMemory/Rest/Mqtt/FileDrop/Dat
 src/Mes                     聚合包：连接字符串 + AddMes 自动注册（一次引入常用 Provider）
 tests/Mes.Core.Tests        单元 + 端到端测试（xUnit）
 samples/Mes.QuickStart      跨平台控制台快速上手样例（net8.0）
+samples/Mes.ConfigDriven    配置驱动的检测流程样例：同一份代码 + 多份工厂配置（net8.0）
 samples/Mes.TestApp         WPF 测试界面（net10.0-windows，仅 Windows）
 docs/                       开发文档
 legacy/                     归档的旧 VB.NET 代码
@@ -72,6 +74,28 @@ await client.ReportInspectionResultAsync(new InspectionResult
     Outcome = InspectionOutcome.Pass
 });
 ```
+
+### 方式四：配置驱动的检测流程（换厂只换配置，代码零改动）
+
+检测软件只触发“阶段”，**每个阶段做哪些 MES 交互全写在 `appsettings.json` 里**：
+
+```csharp
+using Mes; // 聚合包
+
+// 启动读配置即得到一个“配置驱动”的 MES 宿主（Enabled=false 时全部空操作）
+var mes = MesWorkflows.Create(configuration);   // 或 DI：注入 IMesWorkflowHost
+
+var ctx = mes.CreateContext()
+    .Set("serialNumber", "SN-0001")
+    .Set("workOrderId", "WO-1001");
+await mes.RunAsync("BeforeInspection", ctx);    // 检测前：取工单/配方/过站，全由配置决定
+
+// …视觉算法…
+ctx.Set("outcome", "Pass").Set("inspectionResult", result);
+await mes.RunAsync("AfterInspection", ctx);     // 检测后：上报结果/测量/报警，全由配置决定
+```
+
+换工厂只需换一份 `appsettings.json`。详见 [docs/08 · 配置驱动的检测流程](./docs/08-配置驱动的检测流程(场景剧本).md) 与可运行样例 [`samples/Mes.ConfigDriven`](./samples/Mes.ConfigDriven)。
 
 完整用法见 [`docs/`](./docs/README.md)，可运行样例见 [`samples/Mes.QuickStart`](./samples/Mes.QuickStart)。
 
