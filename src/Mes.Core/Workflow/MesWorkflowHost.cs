@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Mes.Core.Client;
 using Mes.Core.Common;
 using Mes.Core.Configuration;
@@ -18,6 +19,7 @@ public sealed class MesWorkflowHost : IMesWorkflowHost
     private readonly IMesClient _client;
     private readonly bool _enabled;
     private readonly IReadOnlyDictionary<string, List<MesWorkflowStep>> _workflows;
+    private readonly IReadOnlyCollection<string> _phases;
     private readonly ILogger _logger;
 
     /// <summary>构造。</summary>
@@ -35,13 +37,14 @@ public sealed class MesWorkflowHost : IMesWorkflowHost
                 map[kv.Key] = kv.Value;
         }
         _workflows = map;
+        _phases = map.Keys.ToArray();
     }
 
     /// <inheritdoc />
     public bool Enabled => _enabled;
 
     /// <inheritdoc />
-    public IReadOnlyCollection<string> Phases => (IReadOnlyCollection<string>)_workflows.Keys;
+    public IReadOnlyCollection<string> Phases => _phases;
 
     /// <inheritdoc />
     public MesWorkflowContext CreateContext() => new();
@@ -183,9 +186,11 @@ public sealed class MesWorkflowHost : IMesWorkflowHost
 
         if (!string.IsNullOrWhiteSpace(step.CaptureTo))
         {
-            var typed = await _client.InvokeAsync<Dictionary<string, object?>>(step.Operation, payload, args, token).ConfigureAwait(false);
+            // 用 JsonElement 捕获，可忠实保留对象/数组/标量（布尔、数值、字符串）等任意返回形态，
+            // 而不是强行当作对象字典（后者会让“裸标量返回”被静默当成失败）。
+            var typed = await _client.InvokeAsync<JsonElement>(step.Operation, payload, args, token).ConfigureAwait(false);
             if (typed.Success)
-                ctx.Set(step.CaptureTo!, typed.Value);
+                ctx.Set(step.CaptureTo!, MesWorkflowContext.Normalize(typed.Value));
             return typed;
         }
 

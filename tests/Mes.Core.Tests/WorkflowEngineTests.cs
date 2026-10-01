@@ -2,6 +2,7 @@ using Mes.Core.Builder;
 using Mes.Core.Client;
 using Mes.Core.Configuration;
 using Mes.Core.Models;
+using Mes.Core.Operations;
 using Mes.Core.Workflow;
 using Mes.Protocols.InMemory;
 using Xunit;
@@ -121,6 +122,28 @@ public sealed class WorkflowEngineTests
         Assert.Equal(2, result.Steps.Count);
         Assert.True(ctx.TryResolvePath("workOrder.productCode", out var pc));
         Assert.Equal("chained", pc);
+    }
+
+    [Fact]
+    public async Task CaptureTo_CapturesBareScalarResult()
+    {
+        // 回归：某些 MES 操作可能返回裸标量（如布尔）。CaptureTo 必须忠实捕获，
+        // 而不是当成对象字典而静默丢失（否则后续条件/模板取不到值）。
+        var options = OptionsWith(true,
+            ("BeforeInspection", new[]
+            {
+                new MesWorkflowStep { Operation = "CheckUnitPassed", CaptureTo = "gate" },
+            }));
+        var (host, server) = Create(options);
+        server.OnRequest(MesOperationKeys.CheckUnitPassed, _ => InMemoryResponse.Ok(true));
+
+        var ctx = host.CreateContext();
+        var result = await host.RunAsync("BeforeInspection", ctx);
+
+        Assert.True(result.Success);
+        Assert.True(result.Steps[0].Success);
+        Assert.True(ctx.TryResolvePath("gate", out var gate));
+        Assert.Equal(true, gate);
     }
 
     [Fact]
